@@ -1,0 +1,155 @@
+﻿C# fue creado por Anders Hejilsberg.
+Lenguaje Multiparadigma.
+Fuertemente tipado (definir los tipos de datos).
+Imperativo (sentencias que se tienen que ejecutar).
+Declarativo (sin flujo de programación predeterminado).
+Funcional.
+Genérico (información en memoria).
+Orientado a objetos (basado en clases).
+Orientado a componentes (permitir conexiones desacopladas entre softwares).
+Principios de c#
+	Simple,moderno,de propósito general, orientado a objetos.
+	Robusto(muchas funcionalidades),durable,productividdad para el programador.
+	Ambientes distribuidos (multiconexiones).
+	Portabilidad (diferentes SO).
+	Soporte para internacionalización (varias codificaciones).
+	Uso en servidores y entornos embebidos.
+	Bajo uso de procesador y memoria.
+Reutilizar códigos para reducir dificultades.
+Versión 1.0
+	Características similares a JAVA.
+Versión 2.0
+	Generics(),Partial types(definir un pedazo de clase en un archivo y otra en otro para grandes equipos de trabajo).
+	Mas productividdad en grandes cadenas de datos.
+Versión 3.0
+	Herramientas para codificar mas rapido y no caer en lo repetitvo.
+Versión 4.0
+	Tipos dinamicos de datos para no definir tipos en cada momento.
+Versión 5.0
+	Hacer múltiples hilos de ejecución usar varios núcleos de la cpu.
+Versión 6.0
+	Hacer azúcar sintactico (reducir líneas de código para funcionalidades).
+Versión 7.0
+	---
+---------------------
+ctrl+barra_espaciadora%%sugerencias a poner de variables.
+ctrl+punto%%sugerencias para generar método o constructor.
+ctrl+k ctrl+f%%Formatear el documento.
+alt+shift%%Seleccionar multiplemente.
+https://code.visualstudio.com/shortcuts/keyboard-shortcuts-windows.pdf %%Consultar todos los atajos.
+cw%%Método writeline.
+class,prop, propfull%%Permite crear clases, setter y getter.
+F2 o click derecho "Rename Symbol"%%Renombra todas las entidades con la nueva cadena, aplica para modificar varios archivos.
+$ $"Nombre{Nombre}" %% Permite poner cadenas con variables.
+En C# todo es un objeto que hereda de la clase object.
+type variable=dato%% Se asignan valores por defecto que no necesariamente se tienen que declarar.
+=> %%Asignar mas cortamente (implica que).
+(Var1,Var2) =  (Var1,Var2);%%Asignación de tuplas.
+public string Ciudad { get; set; }%% Crear getter y setter.
+type var=dato%%Declarar uso de los parámetros opcionales.
+var:dato%%Usar parámetros opcionales.
+La Firma del método es que valor tiene, cual devuelve y que recibe.
+Extensión jchanon en visual studio c# para facilitar crear clases en c#.
+%%3 formas de mostrar las cadenas en pantalla.
+System.Console.WriteLine(curso1.Nombre + "," + curso1.UniqueId);%%
+System.Console.WriteLine($"{curso2.Nombre},{curso2.UniqueId}");%%
+System.Console.WriteLine(curso3);%% Se necesita hacer override a ToString();
+%%Tipos de colecciones
+Simples-Manipulan todo como tipos object%%ArrayList,BitArray,Queue,Stack,Sorted.
+Specialized-Implementaciones comunes%%StringCollection,BitVector,ListDictionary,NameValueCollection.
+Generic-Usan generics para crear implementaciones optimizadas de colección según el tipo de dato configurado.%%Dictionary<T,K>,List<T>,Queue<T>,Stack<T>,HachSet<T>,SortedSet<T>.
+Concurrent-Preparadas para acceso concurrente (varios nucleos)%%ConcurrentBag<T>,ConcurrentStack<T>,ConcurrentQueue<T>.
+lista.Add%%Agrega un nuevo elemento.
+lista.AddRange%%Agrega una nueva lista a lo que ya se tenía.
+lista.Clear();%%Limpia la colección de todos los datos.
+lista.Remove();%%Elimina el dato usando su HashCode como identificador.
+lista.RemoveAll();%%Elimina el con todos los que cumplan con una condicón usa un Predicate para lograrlo.
+lista.RemoveAt();%%Remueve por indice.
+objeto.GetHashCode();%%Obtener el código hash identificador.
+Predicate%%Específica que parámetros de entrada y salida de tener un método.
+delegate%% tipo que encapsula de forma segura un método, en una función anónima.
+(objeto) => objeto.atributo == variable%%Función lambda para retorno de true/false.
+static %% Tipo de clase que no permite nuevas clases es basicamente un objeto.
+Por regla general si un método tiene mas de 50 líneas probablemente está mal diseñado.
+--------------------------
+Herencia%%Se pueden heredar distintos métodos ya sea implementados o que la clase hijo tenga que implementar a su manera.
+public class ClaseA:ClaseB%% implementar herencia de métodos.
+Modificadores de acceso%%
+abstract%%Indica que la clase no crea objetos pero es usada usa para herencia.
+sealed&&No permite que la clase pueda ser usada para herencia como clase padre.
+Polimorfismo%%Todos las clases hijo pueden tratarse como objetos padre.
+ObjetoBase ob=ObjetoHijo%%Guardar en un objeto Padre el Objeto Hijo.
+objetohijo= (tipoHijo) objetopadreh;%%objetopadreh es tipoHijo guardado en un objetobase, para usar cast el objeto original debe ser del tipo Hijo de lo contrario generará una exepción en poliformismo.
+.GetType()%%Regresa el tipo del objeto como fue construido originalmete.
+El poliformismo puede presentar problemas si no se sabe bien que tipo de dato es.
+objeto is tipo%%Is-Manda un true si es de ese tipo de dato.
+tipo variable=objeto as tipo%%As-Si es del tipo lo asigna completo sino retorna null.
+override string ToString()%%Modificar método ToString() del objeto para mostrarlo en consola y en el debug.
+interface%%Para Interfaces usar I antes del nombre como identificador sugerido.
+Todos los atributos de una interfaz deben ser públicos.
+Interfaz es un medio común para que los objetos no relacionados se comuniquen entre sí. 
+Ilugar.metodo%% Interfaz explícita que no puede ser llamada fuera de la clase.
+Las interfaces son como un contrato porque mínimo deben cumplir la funcionalidad específicada en la clase.
+obj is Ilugar%%Uso de la interfaz para identificar un objeto como si fuera de ese tipo.
+var listaIlugar = from obj in listaObjetos %%Diccionario de datos.
+                  where obj is Ilugar
+                  select (Ilugar) obj;
+El modo en como se ve un objeto es una interfaz.
+Las regiones no cambian nada en cuanto a la programación pero si en su visualización en el IDE.
+#region %% Es una directiva para hacer una división en el código no afecta la funcionalidad pero mejora la legibilidad.
+Las tuplas pueden retornarse de una función.
+tipo Método(out tipo parametro1, out tipo parametro2, tipo variable){}%%Método con parámetros de salida.
+%%La asignación de un valor a los parámetros de salida es forzosa en la definición de la función.
+%%En la llamada de función se deben invocar todas las salidas, pero se pueden asignar a una misma variable si no nos interesa el valor.
+%%Usar la sobrecarga de métodos para realizar un retorno de solo el valor deseado.
+IReadOnlyList%%Interfaz de lista, para que la lista solo sea de consulta y que el desarrollador solo la use en los métodos previamente hechos.
+Dictionary <int,string> diccionario = new Dictionary<int, string>();Crea Diccionario (similar a arreglo), que puede ser controlado por índice del tipo específicado en este caso int.
+diccionario.Add(key,valor);%%Agrega un valor específicando la key(indice) donde se guardará.
+dic["Martes"]=variable;Diccionario con key tipo string.
+diccionario.Add(key,nuevalor);%%Si ya se inicializó con un valor no se puede actualizar asi puesto que las key son irrepetibles.
+%%Al tener una lista se pierde la herencia sobre el objeto del tipo que contiene la lista.
+List<ObjetoEscuelaBase> o = new List<ObjetoEscuelaBase>();
+List<Curso> c = new List<Curso>();//El curso hereda de ObjetoEscuelaBase.
+o = (List<ObjetoEscuelaBase>) c;//Lista de cursos no hereda de lista de objetosEscuelaBase.
+o = c.Cast<ObjetoEscuelaBase>();%%Para poder convertirlo a una lista se usa cast que lo convierte a una lista IEnumerable.
+AppDomain.CurrentDomain.ProcessExit+=AccionDelEvento;%%Añadir evento de salida con +=, con -=se puede remover.
+AppDomain.CurrentDomain.ProcessExit+=(o,s)=> Printer.Beep(2000,1000,1);%%Añadir evento con expresión Lambda.
+Por convención los elementos privados comienzan por "_".
+nameof(variable)%%Asigna el tipo correcto requerido por la función.
+Tener un generador de reportes es importante para poder hacer pétición de la información.
+Siempre es importante separar la presentación de la información de la extracción de la información.
+El reporteador se encarga de extraer la información.
+Dictinct() %%Selecciona elementos sin repetirse.
+Sentencia Linq
+var evalAsignatura= from eval in listaEvaluaciones
+                    where eval.Asignatura.Nombre == asig//Condiciona que solo queden las asignaturas de las evaluaciones que coinciden con la lista de asignaturas.
+                    select eval;
+Consejo si el problema es muy complicado es debido a que el problema no es solo uno sino varios y se procede a partirlo en fracciones.
+new { eval.Alumno.UniqueId,
+      AlumnoNombre = eval.Nombre,
+      NombreEval = eval.Nombre,
+      eval.Nota}; Creación de objeto anonimo con atributos UniqueId, AlumnoNombre, NombreEval, Nota.
+linq con delegate
+var dummy = from eval in asigConEval.Value//Obtiene los valores del diccionario como elemento para hacer el recorrimiento.
+            group eval by eval.Alumno.UniqueId//eval es la variable recorrida, pero esta no es accesible puesto que es agrupada por UniqueId de Alumno.
+            into grupoEvalsAlumno // La variable que contiene los datos agrupados se llama grupoEvalsAlumno
+            select new
+            {
+              AlumnoId = grupoEvalsAlumno.Key,//Obtiene el identificador que este caso es el primer dato tomado pero como es el mismo para cada Alumno en su respectiva evaluacion no importa.
+              Promedio = grupoEvalsAlumno.Average(evaluación => evaluación.Nota),//Del arreglo de datos que contiene grupoEvalsAlumno obtiene el método
+              PromedioD = grupoEvalsAlumno.Average(delegate(Evaluación eval2) {return eval2.Nota})
+            };
+Linq es un lenguaje declarativo que opera por medio de sentencias sin usar ciclos iterativos.
+throw Exeption();%%Arroja una exepción.
+try y catch%%Prueba código y atrapa la exepción para procesarla.
+try{} catch(Exep1){} catch(Exep2){}%%Exepciones en casacada, realiza la primera que atrape.
+catch(ArgumentOutOfRangeException arge){Printer.WriteTitle(arge.Message)};%%Obtiene como parametro1 la exepción.
+finally%%Siempre se ejecuta algo justo antes de salir a pesar de que exista una exepción.
+En todos los escenarios posibles es mejor evitar la exepción antes que usar try y catch.
+override%%sobrescritura de método.
+()(parm1)%% sobrecarga de método.
+Para reaccionar ante acontecimientos generados por algún objeto dentro del programa se puede hacer uso de: Event,Handler.
+Linq es un lenguaje de programación para consultar bases de datos: Falso.
+Si quiero que el resultado de una consulta con Linq no me devuelva elementos duplicados debo hacer uso del método: Distinct().
+nombre = Console.ReadLine();%%Leer de la consola una variable.
+double.Parse()%%Convertir a tipo double una cadena.

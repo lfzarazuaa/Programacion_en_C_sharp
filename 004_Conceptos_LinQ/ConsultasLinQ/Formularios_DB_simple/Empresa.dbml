@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Database Name="CursoLinQ" Class="EmpresaDataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Connection Mode="AppSettings" ConnectionString="Data Source=DESKTOP-UORMO40\SQLEXPRESS;Initial Catalog=CursoLinQ;Integrated Security=True" SettingsObjectName="Formularios_DB_simple.Properties.Settings" SettingsPropertyName="CursoLinQConnectionString1" Provider="System.Data.SqlClient" />
+  <Table Name="dbo.Empleado" Member="Empleado">
+    <Type Name="Empleado">
+      <Column Name="codigo" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="nombre" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="apellidoPaterno" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="apellidoMaterno" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="edad" Type="System.Int32" DbType="Int" CanBeNull="true" />
+    </Type>
+  </Table>
+  <Table Name="dbo.ALUMNO" Member="ALUMNO">
+    <Type Name="ALUMNO">
+      <Column Name="IDALUMNO" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="NOMBREALUMNO" Type="System.String" DbType="VarChar(50)" CanBeNull="true" />
+      <Column Name="APELLIDOPATERNOALUMNO" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="APELLIDOMATERNOALUMNO" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="NOTA1" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="NOTA2" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="NOTA3" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="NOTA4" Type="System.Int32" DbType="Int" CanBeNull="true" />
+      <Column Name="CURSOFAVORITO" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+      <Column Name="NIVELACADEMICO" Type="System.String" DbType="VarChar(100)" CanBeNull="true" />
+    </Type>
+  </Table>
+</Database>

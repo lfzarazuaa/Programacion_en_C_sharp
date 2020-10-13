@@ -1,0 +1,352 @@
+Origen de los datos para Linq:
+    - Una estructura de datos (Array , Lista , etc).
+    - Sistema de Archivos.
+    - Servicio Web.
+    - Base de Datos.
+
+Todas las operaciones de consulta LinQ constan de tres acciones distintas:
+    1- Obtener el Origen de Datos  (Puede ser una estructura de datos , sistema de archivos , servicio web o base de datos).
+    2- Crear la consulta  (Aquí solo se define la consulta , NO se ejecuta).
+    3- Ejecutar la consulta (Mediante la instrucción foreach, recién podemos ejecutar la consulta LinQ).
+
+En una consulta LINQ, el primer paso es especificar el origen de datos. En C#, como en la mayoría de los lenguajes de programación, se debe declarar una variable antes de poder usarla. En una consulta LINQ, la cláusula from aparece en primer lugar para introducir el origen de datos (customers) y la variable de rango (cust).
+
+var scoreQuery =    from score in scores // scores, es la fuente de los datos, score es la variable de rango, el nombre de esta variable es propuesto por el usuario.
+                    where score > 80 // condicional
+                    select score // salida de datos
+
+Cuando se ejecuta la consulta, la variable de rango actúa como referencia para cada elemento sucesivo de customers.
+
+// Origen de datos.
+int[] notas = new int[] { 10, 11, 17, 8, 9, 13, 14 };
+
+// Consulta.
+var consulta = from nota in notas // Score es la variable de rango, scores el origen de datos.
+               where nota > 10 // Condicional
+               select nota; // Campos que contendra el resultado.
+// Ejecutar la consulta.
+foreach (var item in consulta)
+{
+    Console.WriteLine(item);
+}
+
+Métodos para aplicar a la consulta 
+    Count : Nos permite sacar el numero de elementos que tiene la respuesta.
+    Max : Nos permite sacar el máximo valor de la respuesta.
+    Average : Nos permite obtener el promedio de la respuesta.
+    First : Nos permite obtener el primer valor de la respuesta.
+
+List<Customers> listaCustomers = new List<Customers>
+            {
+                new Customers {nombre="Ricardo" , apellido="Sanchez" , ciudad="Lima" },
+                new Customers {nombre="Victor" , apellido="Alegria" , ciudad="Arequipá" },
+                new Customers {nombre="Julio" , apellido="Felipe" , ciudad="Lima" },
+            };
+
+
+// Consulta Aquellos que viven en Lima (Nombre: ______ Apellido: ________).
+IEnumerable<Customers> consulta = from item in listaCustomers
+                                  where item.ciudad.Equals("Lima")//Compara la cadena.
+                                  select item; // Campos que contendrá el resultado.
+
+A menudo es necesario ordenar los datos devueltos. La cláusula orderby hará que los elementos de la secuencia devuelta se ordenen según el comparador predeterminado del tipo que se va a ordenar.
+
+orderby item ascending
+orderby item descending
+
+// Origen de datos.
+List<Empleado> listaEmpleado = new List<Empleado>
+{
+    new Empleado {nombre="Pepe", apellido="Lucho", sueldo=1500 },
+    new Empleado {nombre="Jose", apellido="Perez", sueldo=1800 },
+    new Empleado {nombre="Nicolas", apellido="Alva", sueldo=1590 },
+    new Empleado {nombre="Charo", apellido="Gonzalez", sueldo=1520 }
+};
+
+// Creación de la consulta.
+var consulta = from empleado in listaEmpleado
+                where empleado.sueldo > 1500 // Sueldo mayor a 1500.
+                orderby empleado.nombre descending// Ordenar descendentemente
+                select empleado;// Campo a seleccionar.
+// Ejecutar la consulta.
+foreach (var item in consulta)
+{
+    Console.WriteLine($"El apellido es {item.apellido} y su sueldo es {item.sueldo}");
+}
+
+// Uso de distinct para eliminar empleados repetidos.
+var consulta = (from empleado in listaEmpleado
+                where empleado.sueldo > 1500 // Sueldo mayor a 1500.
+                orderby empleado.nombre descending // Ordenar descendentemente
+                select empleado).distinct();
+
+// Creación de la consulta con select tipo string.
+var consulta = from empleado in listaEmpleados
+               orderby empleado.nombreCompleto descending // Ordenar descendentemente
+               select $" {empleado.nombreCompleto} gana {empleado.sueldo} en la ciudad de {empleado.ciudad}."; // Campo a seleccionar.
+
+Consulta con group by
+
+La cláusula group permite agrupar los resultados según la clave que se especifique. Por ejemplo, podría especificar que los resultados se agrupen por ciudad para los customers.
+
+// Origen de datos.
+List<Customers> listaCustomers = new List<Customers>
+{
+    new Customers {nombre="Ricardo", apellido="Sanchez", ciudad="Lima" },
+    new Customers {nombre="Victor", apellido="Alegria", ciudad="Arequipá" },
+    new Customers {nombre="Julio", apellido="Felipe", ciudad="Lima" },
+};
+// Consulta con group by sin select.
+var listaCustomerQuerys = from customer in listaCustomers
+                        group customer by customer.ciudad;
+// Ejecutar la consulta con lista dentro de lista por el group by.
+foreach (var customerGroup in listaCustomerQuerys)
+{
+    Console.WriteLine($"Personas en ciudad de {customerGroup.Key}");//Criterio con ciudades
+    foreach (Customers customer in customerGroup)// Lista con elementos agrupados.
+    {
+        Console.WriteLine($"    Nombre: {customer.nombre}, Apellido: {customer.apellido}");
+    }
+}
+
+Clausula INTO con having
+Si debe hacer referencia a los resultados de una operación de grupo, puede usar la palabra clave into para crear un identificador con el que se puedan realizar más consultas.  Ejemplo: Imprimir solo aquella ciudad que viven mas de 1 empleado.
+
+// Origen de datos.
+List<Empleado> listaEmpleado = new List<Empleado>
+{
+    new Empleado {nombre="Cecilia" , apellido="Fito" ,sueldo=2500 },
+    new Empleado {nombre="Pepe", apellido="Lucho" ,sueldo=1200 },
+    new Empleado {nombre="Jose", apellido="Perez" ,sueldo=1300 },
+    new Empleado {nombre="Nicolas", apellido="Mendez" ,sueldo=1200 },
+    new Empleado {nombre="Charo", apellido="Gonzalez" ,sueldo=1200 },
+    new Empleado {nombre="Paolo", apellido="Farfan" ,sueldo=1300 }
+};
+// Consulta con group by con having.
+var listaEmpleadoQuerys = from empleado in listaEmpleado
+                          group empleado by empleado.sueldo into empleado_sueldo
+                          where empleado_sueldo.Count()>2
+                          select empleado_sueldo;
+// Ejecutar la consulta con lista dentro de lista por el group by.
+foreach (var empleadoGroup in listaEmpleadoQuerys)
+{
+    Console.WriteLine($"Personas con sueldo de {empleadoGroup.Key}"); // Criterio con sueldo.
+    foreach (Empleado empleado in empleadoGroup) // Lista con elementos agrupados.
+    {
+        Console.WriteLine($"    El nombre es: {empleado.nombre}, su apellido es: {empleado.apellido}, su sueldo es: {empleado.sueldo}");
+    }
+}
+
+La cláusula ‘join’ es útil para asociar elementos de diferentes secuencias de origen que no tienen una relación directa en el modelo de objetos. 
+El único requisito es que los elementos de cada fuente compartan algún valor que se pueda comparar para la igualdad
+Algunas cláusulas usadas dentro de un join:
+    - equals palabra clave contextual que se usa en una cláusula join en una expresión.
+    - on palabra clave contextual se utiliza en la cláusula de unión de una expresión de consulta para especificar la condición de unión.
+
+public static void Ejercicio_014()
+{
+Console.WriteLine("Ejercicio 014-Consulta con join múltiple");
+// Origen de datos.
+List<Genero> listaGenero = new List<Genero>
+{
+    new Genero{idGenero=1 , nombreGenero="Masculino"},
+    new Genero{idGenero=2 , nombreGenero="Femenino"},
+};
+List<ModalidadContratoGenero> listaModalidad = new List<ModalidadContratoGenero>
+{
+    new ModalidadContratoGenero {idModalidadContrato=1 , nombreModalidadContrato="CAS" },
+    new ModalidadContratoGenero {idModalidadContrato=2 , nombreModalidadContrato="Temporal" },
+};
+List<EmpleadoGenero> listaEmpleado = new List<EmpleadoGenero>
+{
+    new EmpleadoGenero { nombre="Andrea" , idEmpleado=1 , idModalidadContrato=1, idGenero=2 },
+    new EmpleadoGenero { nombre="Jorge" , idEmpleado=2 , idModalidadContrato=2, idGenero=1 },
+    new EmpleadoGenero { nombre="Rogelia" ,idEmpleado=3 , idModalidadContrato=2, idGenero=2 },
+    new EmpleadoGenero { nombre="Julio" , idEmpleado=4 , idModalidadContrato=1, idGenero=1 }
+};
+// Consulta con join múltiple.
+var listaEmpleados = from empleado in listaEmpleado
+                     join modalidad in listaModalidad
+                     on empleado.idModalidadContrato equals modalidad.idModalidadContrato // Se coloca la llave del campo del from primero.
+                     join genero in listaGenero
+                     on empleado.idGenero equals genero.idGenero // Join con el genero.
+                     select new { empleado.nombre, modalidad.nombreModalidadContrato, genero.nombreGenero }; // Crea un nuevo objeto con los campos deseados.
+// Ejecutar la consulta con lista del nuevo objeto creado.
+foreach (var empleado in listaEmpleados)
+{
+    Console.WriteLine($"Empleado {empleado.nombre} con modalidad {empleado.nombreModalidadContrato} tiene género {empleado.nombreGenero}."); // Mostrar conforme al nuevo objeto basado en el join.
+}
+
+Windows Forms
+Con text se le puede asignar el título a la ventana o formulario.
+Start Position indica la posición inicial del windows form, opción CenterScreen par comenzar en el centro.
+
+Maximize Box y Minimize Box sirven para definir si tendrán la opción de minimizar y maximizar.
+Windows state view: Normal, permite que la ventana aparezca con el tamaño original.
+Al hacer doble clic en el título de la ventana nos manda al evento load.
+
+En program se define con que formulario comenzar.
+static class Program
+    {
+        /// <summary>
+        ///  The main entry point for the application.
+        /// </summary>
+        [STAThread]
+        static void Main()
+        {
+            Application.SetHighDpiMode(HighDpiMode.SystemAware);
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new Form2()); // Nombre de formulario a ejecutar.
+        }
+    }
+
+    MessageBox.Show("Ingresar números correctos"); // Message box con solo texto.
+    MessageBox.Show("Ingresar números correctos", "Advertencia", MessageBoxButtons.OK, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button3); // Message box con distintas opciones.
+
+dgvCategoria.DataSource = null; // Limpia los datos.
+dgvCategoria.DataSource = listaCategoria; // Coloca la nueva lista en la GUI.
+ReadOnly // Propiedad que impide la edición del elemento por parte del usario.
+TextChanged // Evento para cambio de texto.
+
+Combo Box
+    // Objeto de donde tomará la información.
+    cboCategoria.DataSource = listaCategoria;
+    // Propiedad que va a desplegar en pantalla el combo box.
+    cboCategoria.DisplayMember = "nombreCategoria";
+    // Propiedad que va a tomar como valor el combo box.
+    cboCategoria.ValueMember = "idCategoria";
+    int id=int.Parse( cboCategoria.SelectedValue.ToString()); // Convierte a entero.
+
+
+db.Products.InsertOnSubmit(productoNuevo); // Agregar nuevo dato.
+db.SubmitChanges(); // Actualizar la db.
+// Agregar una nueva fila.
+Products productoNuevo = new Products
+{ 
+    ProductName = productName,
+    CategoryID = categoriaId,
+    SupplierID = proveedorId,
+    QuantityPerUnit = Descripción,
+    UnitPrice = precio,
+    UnitsInStock = stock
+};
+
+db.Products.InsertOnSubmit(productoNuevo);
+try
+{
+    db.SubmitChanges();
+    Listar();
+    Limpiar();
+    MessageBox.Show("Se agregó correctamente.");
+}
+catch(Exception ex)
+{
+    MessageBox.Show($"Ocurrió un error al ingresar el dato. {ex.Message}");
+}
+
+Text box bloquear edición
+ReadOnly = True;
+
+Data Grid view bloquear edición
+SelectionMode = FullRowSelect;
+
+Data Grid View detectar click en fila
+Evento: CellClick
+
+Leer fila seleccionada
+txtNombre.Text = (string)dgvTerritorios.CurrentRow.Cells[1].Value;
+
+var consulta = db.ALUMNO
+.Where(delegate (ALUMNO alumno)
+{
+    var suma = alumno.NOTA1 + alumno.NOTA2 + alumno.NOTA3 + alumno.NOTA4;
+    return suma >= numeroMenor && suma <= numeroMayor;
+})
+.Select(p =>
+new
+{
+    Nombre = $"{p.NOMBREALUMNO} {p.APELLIDOPATERNOALUMNO} {p.APELLIDOMATERNOALUMNO}",
+    SumaDeNotas = p.NOTA1 + p.NOTA2 + p.NOTA3 + p.NOTA4
+}) ;
+Usar where para filtar obejetos del primer from y despues de un select para filtrar conforme a ese select.
+
+var consulta = db.ALUMNO
+.Select(p =>
+new
+{
+    Nombre = $"{p.NOMBREALUMNO} {p.APELLIDOPATERNOALUMNO} {p.APELLIDOMATERNOALUMNO}",
+    SumaDeNotas = p.NOTA1 + p.NOTA2 + p.NOTA3 + p.NOTA4
+})
+.Where(s => s.SumaDeNotas >= numeroMenor && s.SumaDeNotas <= numeroMayor;
+);
+
+// Eliminar registro físicamente
+// Obtiene registro a eliminar
+var region = db.Region.Where(r => r.RegionID.Equals(id)).FirstOrDefault();
+try
+{
+    // Elimina al registro en memoria.
+    db.Region.DeleteOnSubmit(region);
+    // Elimina al registro en la base de datos.
+    db.SubmitChanges();
+    // Actualizar la tabla.
+    Listar();
+    id = 0;
+    MessageBox.Show("Región eliminada.");
+}
+catch
+{
+    MessageBox.Show("Ha ocurrido un error.");
+}
+
+tool strip para agregar un menú de opciones.
+tool strip label para una etiqueta de texto en el menú.
+Los formularios de popup no deben tener opción de maximizar ni de minimizar.
+
+LLamar un formulario como popup(bloqueando el formulario principal)
+frmPopupTerritorio ofrmPopupTerritorio = new frmPopupTerritorio();
+ofrmPopupTerritorio.ShowDialog();
+
+Con la propiedad DialogResult de cada boton en (Ok, Cancel, Yes, No) se puede salir del formulario sin indicarlo por código.
+
+Para crear un popupmenu que sirva para editar y agregar, se puede crear una propiedad dentro del formulario para así asignar el comportamiento deseado según la propiedad.
+private void menuNuevo_Click(object sender, EventArgs e)
+{
+    frmPopupTerritorio ofrmPopupTerritorio = new frmPopupTerritorio();
+    // Asignar valor de acción (Agregar o Editar)
+    ofrmPopupTerritorio.accion = "Nuevo";
+    ofrmPopupTerritorio.ShowDialog();
+}
+public partial class frmPopupTerritorio : Form
+    {
+        private string _accion;
+
+        public string accion
+        {
+            get { return _accion; }
+        }
+    }
+
+Para pasar el id se debe crear una propiedad de id en el popupmenu.
+
+public string id { get; set; }
+
+Encriptación de contraseña.
+
+public static string Encriptar(string cadena)
+{
+    // Crea objeto para encriptar.
+    SHA256Managed osHA256Managed = new SHA256Managed();
+    // Guarda en un string de bytes la cadena.
+    byte[] bufferCadena = Encoding.Default.GetBytes(cadena);
+    // Encripta la cadena.
+    byte[] bufferCadenaCifrada = osHA256Managed.ComputeHash(bufferCadena);
+    // Convierte cada byte a su representación hexadecimal en string.
+    var cadenaCifrada = BitConverter.ToString(bufferCadenaCifrada);
+    // Quita de la cadena los "-" que separan cada Byte.
+    cadenaCifrada = cadenaCifrada.Replace("-", "");
+    return cadenaCifrada;
+}
+
+DataContext guarda los datos en memoria una vez que ya obtuvo el registro de la base de datos, si se vuelve a consultar el mismo recurso entonces lo obtendrá de memoria sin conectarse a la base de datos, para evitar este comportamiento si no se desea hay que usar using o crear una nueva instancia.

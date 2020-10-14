@@ -1,0 +1,2 @@
+ctrl + tab : Iterar sobre los archivos abiertos.
+ctrl + f5 : Abrir en el navegador la vista sobre la que se está posicionado.

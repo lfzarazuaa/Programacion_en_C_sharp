@@ -1,0 +1,238 @@
+MVC
+    MVC es el significado de:
+        - Modelo 
+            - Información de la aplicación y el comportamiento en términos del dominio de su problema y es independiente de la interfaz gráfica.
+            - Solo representa la información y no está ligada a la interfaz gráfica.
+            - En el modelo se incluyen entidades como pelicula, cliente, renta, transacción, pero ninguna relacionada a la interfaz.
+            - Son representados como POCOs (Plain Old CLR Objects).
+        - Vista
+            - Representa la parte gráfica de la aplicación, en programación web el código html y css.
+        - Controlador
+            - Es el responsable de manejar la petición http para consultar el modelo y de ahi mandar la información a la vista.
+    - Es un patrón de arquitectura para implementar interfaces gráficas.
+    - Diseñada en 1970.
+    - Muy usada en la web.
+    - Se encuentra en ASP.NET, Ruby on Rails y Express entre otros.
+    - Otorga la caracterísitca de dar mejor mantenimiento al proyecto y una mejor separación de responsabilidades.
+Al crear el proyecto en ASP.NET con MVC tenemos:
+    App_Data:
+        - Lugar donde se guarda el archivo de base de datos.
+    App_Start:
+        - Incluye las clases que se van a llamar cuando la aplicación se inicializa.
+        Archivo RouteConfig.cs:
+            - Contiene información de las rutas a usar.
+            - Por defecto contiene una ruta con el nombre default, con un patrón de url asignado, si se empareja con ese patrón accedera conforme lo indicado.
+            public static void RegisterRoutes(RouteCollection routes)
+            {
+                routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
+
+                routes.MapRoute( // Realiza el routing para mandarlo a un controlador.
+                    name: "Default", // Nombre de patrón a usar.
+                    url: "{controller}/{action}/{id}", // Url con el formato del patron.
+                    // Asigna la primera parte de la ruta a la variable controller.
+                    // Asigna la segunda parte de la ruta a la variable action.
+                    // Asigna la tercera parte de la ruta a la variable id.
+                    defaults: new { controller = "Home", action = "Index", id = UrlParameter.Optional } // Ejecuta un método por defecto si no cumplió con el patrón de la ruta, asignando valores default para los casos no dados.
+                );
+            }
+            - Llama a la clase controller indicada, action ejecuta el método de la clase controller indicado y pasa el parámetro si se asignó.
+            - En la opción defaults asigna los parámetros si no se pasaron, si solo se paso el controlador, por defecto llama a la acción indicada en action.
+            - Ruta: /movies/popular
+                - movies (controller): Accede a MoviesController.
+                - popular (action): Accede al método Popular de la clase MoviesController.
+            - Ruta: /movies/edit/1
+                - movies (controller): Accede a MoviesController.
+                - edit (action): Accede al método Edit(int id) de la clase MoviesController.
+                - 1 (id): Pasa el parámetro id al método Edit(int id), como el tipo declarado en el método.
+            - Ruta: /movies:
+                - movies (controller): Accede a MoviesController.
+                - Index (action): Llama a la acción por defecto MoviesController.Index().
+                - Opcional (id): Al ser UrlParameter.Optional no asigna nada pues el parámetro id es declarado como opcional.
+    - Content:
+        - En esta carpeta se guardan los archivos css para dar estilos y formato a las vistas.
+        - También se acostumbra guardar imágenes necesarias, contenido multimedia de la página y otros assets.
+    - Controllers:
+        - Aquí se guardan todos lo controladores que servirán de medio para obtener la información de los métodos http y procesarla para mostrar una respuesta en la vista.
+        - Por defecto tiene el HomeController el cual nos va a enviar a la página home del sitio.
+            public class HomeController : Controller
+            {
+                public ActionResult Index()
+                {
+                    return View();
+                }
+
+                public ActionResult About()
+                {
+                    ViewBag.Message = "Your application description page.";
+
+                    return View();
+                }
+
+                public ActionResult Contact()
+                {
+                    ViewBag.Message = "Your contact page.";
+
+                    return View();
+                }
+            }
+    - Fonts:
+        - Carpeta donde se guardan los distintos estilos de letra a usar en la aplicación, es recomdable moverlo a la carpeta de contenido.
+    - Models:
+        - Aqui se guardan todas las clases de nuestra aplicación de dominio como entidades o cálculos de la lógica de negocio.
+    - Scripts:
+        - Carpeta donde se guardan los archivos de javascript necesarios para el funcionamiento de la aplicación.
+    - Views:
+        - Carpeta donde se guardan las distintas vistas (html) de la aplicación.
+        - Por cada controlador debe haber una carpeta de vistas con el mismo nombre y dentro de cada carpeta una vista por cada metodo de la aplicación.
+        - Para HomeController está la carpeta Controller (dentro de Views) y las vistas que hacen referencia a los métodos del controlador:
+            - About.cshtml
+            - Contact.cshtml
+            - Index.cshtml
+        - Además contiene la carpeta shared la cual sirve para compartir un diseño base entre varias vistas.
+            - _Layout.cshtml
+
+            - Error.cshtml
+        - Contiene un archivo favicon con el cual se presentará la aplicación.
+        - Contiene archivo viewstart.cshtml el cual llama por defecto a _Layout.cshtml
+            @{
+                Layout = "~/Views/Shared/_Layout.cshtml";
+            }
+        - Diseño por defecto de _Layout.cshtml
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>@ViewBag.Title - Mi aplicación ASP.NET</title>
+                @Styles.Render("~/Content/css")
+                @Scripts.Render("~/bundles/modernizr")
+            </head>
+            <body>
+                <div class="navbar navbar-inverse navbar-fixed-top">
+                    <div class="container">
+                        <div class="navbar-header">
+                            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                                <span class="icon-bar"></span>
+                                <span class="icon-bar"></span>
+                                <span class="icon-bar"></span>
+                            </button>
+                            @Html.ActionLink("Nombre de la aplicación", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+                        </div>
+                        <div class="navbar-collapse collapse">
+                            <ul class="nav navbar-nav">
+                                <li>@Html.ActionLink("Inicio", "Index", "Home")</li>
+                                <li>@Html.ActionLink("Acerca de", "About", "Home")</li>
+                                <li>@Html.ActionLink("Contacto", "Contact", "Home")</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="container body-content">
+                    @RenderBody()
+                    <hr />
+                    <footer>
+                        <p>&copy; @DateTime.Now.Year - Mi aplicación ASP.NET</p>
+                    </footer>
+                </div>
+
+                @Scripts.Render("~/bundles/jquery")
+                @Scripts.Render("~/bundles/bootstrap")
+                @RenderSection("scripts", required: false)
+            </body>
+            </html>
+    - Global.asax.cs
+        - Archivo de incialización de la aplicación.
+            public class MvcApplication : System.Web.HttpApplication
+            {
+                protected void Application_Start()
+                {
+                    AreaRegistration.RegisterAllAreas();
+                    FilterConfig.RegisterGlobalFilters(GlobalFiltersFilters);
+                    RouteConfig.RegisterRoutes(RouteTable.Routes);
+                    BundleConfig.RegisterBundles(BundleTable.Bundles);
+                }
+            }
+    - package.config
+        - Archivo de configuración para saber los paquetes de dependencias de los archivos.
+
+Para crear un nuevo modelo se agrega a la carpeta modelos una nueva clase.
+    public class Movie
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
+
+Controladores
+    Para crear controladores se pueden usar plantillas predefinidas para agilizar el desarrollo, sin embargo también se pueden crear controladores vacíos.
+
+    public class MovieController : Controller
+    {
+        // Get Movies/Random
+        public ActionResult Random()
+        {
+            var movie = new Movie() { Name = "Shrek!"}; // Instancia el modelo.
+            return View(); // Llama a la vista de nombre Random.
+        }
+    }
+Vistas
+    Para crear la vista se debe verificar la carpeta en la que se creará (con respecto al controlador), si se elige vista parcial la vista actuará como un componente que se pueda llamar a través de varias vistas.
+
+    Además se debe configurar el Layout que la vista usará como base al momento que sea llamada, esto para no repetir código.
+
+    - Código de Vista:
+        @{
+            ViewBag.Title = "Random";
+            Layout = "~/Views/Shared/_Layout.cshtml";
+        }
+
+        <h2>Random</h2>
+    
+    Con @Model podemos leer desde la vista el modelo pasado por el controlador, el cual es dinámico por defecto a menos que se especifique su tipo.
+
+    - Vista con modelo
+    @model Vidly.Models.Movie
+
+    @{
+        ViewBag.Title = "Random";
+        Layout = "~/Views/Shared/_Layout.cshtml";
+    }
+
+    <h2>Random</h2>
+    <h2>@Model.Name</h2>
+Cambio de tema
+
+    Para cambiar el tema por default de la página se puede navegar hacia bootswatch.com y sustituir el tema de bootstrap por defecto que tiene la plantilla.
+
+    En la página se busca el tema deseado y de ahi se descarga el archivo css, posteriormente se guarda en la carpeta content en este caso con el nombre bootstrap-lumen.css .
+
+    - Se abre en App_Start el archivo BundleConfig para cambiar la referencia al archivo css en StyleBundle.
+
+            public class BundleConfig
+        {
+            // Para obtener más información sobre las uniones, visite https://go.microsoft.com/fwlink/?LinkId=301862
+            public static void RegisterBundles(BundleCollection bundles)
+            {
+                bundles.Add(new ScriptBundle("~/bundles/jquery").Include(
+                            "~/Scripts/jquery-{version}.js"));
+
+                bundles.Add(new ScriptBundle("~/bundles/jqueryval").Include(
+                            "~/Scripts/jquery.validate*"));
+
+                // Utilice la versión de desarrollo de Modernizr para desarrollar y obtener información. De este modo, estará
+                // para la producción, use la herramienta de compilación disponible en https://modernizr.com para seleccionar solo las pruebas que necesite.
+                bundles.Add(new ScriptBundle("~/bundles/modernizr").Include(
+                            "~/Scripts/modernizr-*"));
+
+                bundles.Add(new ScriptBundle("~/bundles/bootstrap").Include(
+                        "~/Scripts/bootstrap.js"));
+
+                bundles.Add(new StyleBundle("~/Content/css").Include(
+                        "~/Content/bootstrap-lumen.css",
+                        "~/Content/site.css")); // Se cambia el archivo de referencia a css.
+            }
+        }
+
+    - En bundle config se puede empaquetar varios archivos de js que se manejen juntos, esto para solo hacer una petición http.
+
+

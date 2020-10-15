@@ -528,3 +528,199 @@ Creando links
             @Html.ActionLink("Movies", "Index", "Movies", new { area = "" }, new { @class = "nav-link" })
         - Link con @Html.ActionLink pasando parámetro id y sin clase css.
             @Html.ActionLink((string)movie.Name, "MovieDetails", "Movies", new { id = movie.Id }, null)
+Entity framework
+    - Es una herramienta para poder acceder acceder a una base de datos, formalmente un ORM (Object Relational Mapper), el cual mapea los datos de sql en objetos de c#.
+    - Si no se usará un mapeador de datos se tendría que abrir manualmente la conexión, ejecutar la sentencia sql, leer la información, guardarla en un objeto y cerrar la conexión.
+    - Entity framework nos provee una clase de tipo DbContext que es el acceso a nuestra base de datos, de ahi se escojen los dbsets(tablas) a leer en la consulta.
+    - Para leer los DbSet se usa sintaxis LinQ el cual se encarga de general el SQL necesario para obtener los datos de la base de datos.
+    - Al leerse los datos se guardan en el DbSet, al hacer adiciones, modificaciones o borrados en el DbSet se guardan los cambios y cuando se indica modificar entonces ejecuta los cambios en la base de datos.
+Flujos de trabajo en Entity Framework
+    - DbFirst: Se crea primero la base de datos y conforme a esta se generan los modelos para relacionar la base de datos con el orm.
+    - CodeFirst: Se crea primero el código de los modelos y conforme a estos se crea la base de datos, se puede ir actualizando si es necesario.
+    - Es mejor usar CodeFirst
+        - Incrmenta la productividad (no se tienen que crear tablas manualmente).
+        - Versionado total de la base de Datos.
+        - Es más fácil de ralizar pruebas de integración a la base de datos.
+    - Cosas que se no son verdaderas de Code-First:
+        - Solo se puede usar para proyectos nuevos o en blanco.
+        - No nos da el control total de la base de datos.
+Pasos para integrar Entity Framework.
+    - Ir a la consola en NuGet Package Manager, NuGet Package Manager Console.
+    - En la consola ejecutar: 
+        enable-migrations
+    - Con enable-migrations se configura poder usar migraciones para tener un historial del diseño de la base de datos.
+    - Se crea la primera migración con: 
+        add-migration InitialModel
+    - Los conjuntos para crear el DbSet los toma de Models/IdentityModels, en la clase  ApplicationDbContext la cual deriva de DbContext, por eso la toma para realizar las migraciones.
+        public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+        {
+            public ApplicationDbContext()
+                : base("DefaultConnection", throwIfV1Schema: false)
+            {
+            }
+
+            public static ApplicationDbContext Create()
+            {
+                return new ApplicationDbContext();
+            }
+        }
+    - En esa misma clase se agregaran los modelos que serán considerados para ser tablas de la base de datos, en este caso la tabla Customers.
+
+        public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+        {
+            public DbSet<Customer> Customers { get; set; }
+
+            public ApplicationDbContext()
+                : base("DefaultConnection", throwIfV1Schema: false)
+            {
+            }
+
+            public static ApplicationDbContext Create()
+            {
+                return new ApplicationDbContext();
+            }
+        }
+    - Ya que no se han ejecutado cambios sobre la base de datos y no se incluyeron todas las tablas necesarias se puede rehacer el código de la migración con el parámetro -force:
+        add-migration InitialModel -force
+    - Crear la base de datos:
+        update-database
+    - En el explorador de soluciones dar clic en mostrar todos los archivos.
+    - En la carpeta App_Data abrir el archivo .mdf generado para ver la base de datos.
+Migraciones
+    Las migraciones deben ser tratadas como pequeñas modificaciones que se hacen y no una modificación masiva a la estructura de la base de datos.
+    - Se aconseja tener migraciones cortas y asociarles nombres referentes a lo modificación realizada.
+    Agregar nueva migración:
+        - add-migration AddIsSuscribedToCustomer
+    Reflejar cambios en la base de datos:
+        - update-database
+Modelos
+    - Creacion de los modelos con llaves foráneas, por convención se escribe MembershipTypeId en donde debe terminar con Id.
+        public class Customer
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public bool IsSubscribedToNewsletter { get; set; }
+            public MembershipType MembershipType { get; set; }
+            public int MembershipTypeId { get; set; }
+        }
+
+        public class MembershipType
+        {
+            public int Id { get; set; }
+            public float SignUpFee { get; set; }
+            public byte DurationInMonths { get; set; }
+            public double DiscountRate { get; set; }
+        }
+Sembrando la base de datos.
+    Para realizar la siembra de los datos en la base de datos, entity framework nos permite agregar sentencias SQL en las migraciones con el Comando SQL:
+        public partial class PopulateMembershipTypes : DbMigration
+        {
+            public override void Up()
+            {
+                Sql("INSERT INTO MembershipTypes (Id, SignUpFee, DurationInMonths, DiscountRate) VALUES (1, 0, 0, 0)");
+                Sql("INSERT INTO MembershipTypes (Id, SignUpFee, DurationInMonths, DiscountRate) VALUES (2, 30, 1, 10)");
+                Sql("INSERT INTO MembershipTypes (Id, SignUpFee, DurationInMonths, DiscountRate) VALUES (3, 90, 3, 15)");
+                Sql("INSERT INTO MembershipTypes (Id, SignUpFee, DurationInMonths, DiscountRate) VALUES (4, 300, 12, 20)");
+            }
+
+            public override void Down()
+            {
+            }
+        }
+    - Guardar los cambios y ejecutar: update-database.
+    - Los datos que se siembren en las migraciones deben ser los pensados cuando se despliega la aplicación de manera inicial, no los datos de prueba para verificar su correcta operación.
+
+Uso de DataAnotations
+    Para definir si un campo es requerido o no, o fijar distintas condiciones de la tabla se deben usar DataAnotations:
+    public class Customer
+    {
+        public int Id { get; set; }
+        [Required]
+        [StringLength(255)]
+        public string Name { get; set; }
+        public bool IsSubscribedToNewsletter { get; set; }
+        public MembershipType MembershipType { get; set; }
+        public int MembershipTypeId { get; set; }
+    }
+    https://docs.microsoft.com/en-us/ef/ef6/modeling/code-first/data-annotations
+
+Consulta de Datos
+    Para consultar los datos se debe instanciar DbContext, este es un ejemplo sin inyección de dependencias en un controlador.
+        private ApplicationDbContext _context;
+        
+        public CustomersController()
+        {
+            _context = new ApplicationDbContext();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _context.Dispose(); // Limpia dbContext de la memoria.
+        }
+
+        public ActionResult Index()
+        {
+            var customers = _context.Customers.ToList();
+            if (customers.Count == 0)
+                return View();
+            return View(customers);
+        }
+
+Eager Loading
+    Para traer todas las propiedades del objeto consultado, como los propiedades que también son objetos se usa eager loading, trayendo mas campos en la consulta.
+    Uso de propiedad de otro objeto (join)
+        <td> @customer.MembershipType.DiscountRate</td>
+    Consulta con Eager Loading para traer todos los miembros indicados.
+        var customers = _context.Customers.Include(c => c.MembershipType).ToList();
+    Espacio de nombre para incluir método de Eager Loading.
+        using System.Data.Entity;
+    
+Agregar nuevo campo con datos
+    - Si el tipo de dato no es nulo por defecto y se requiere que sea nulo debe ser declarado en la entidad como nullable.
+    public DateTime? Birthdate { get; set; }
+
+    public override void Up()
+    {
+        AddColumn("dbo.Customers", "Birthdate", c => c.DateTime());
+    }
+
+    public override void Up()
+    {
+        AddColumn("dbo.MembershipTypes", "Name", c => c.String());
+        Sql("UPDATE dbo.MembershipTypes SET Name = 'Pay as You Go' WHERE Id=1;");
+        Sql("UPDATE dbo.MembershipTypes SET Name = 'Monthly' WHERE Id=2;");
+        Sql("UPDATE dbo.MembershipTypes SET Name = 'Quarterly' WHERE Id=3;");
+        Sql("UPDATE dbo.MembershipTypes SET Name = 'Annual' WHERE Id=4;");
+    }
+
+- Definición de Entidad con elementos foráneos.
+    public class Movie
+    {
+        public int Id { get; set; }
+        [Required]
+        [StringLength(255)]
+        public string Name { get; set; }
+        [Required]
+        public Genre Genre { get; set; }
+        public int GenreId { get; set; }
+        public DateTime ReleaseDate { get; set; }
+        public DateTime DateAdded { get; set; }
+        public int NumberInStock { get; set; }
+    }
+
+- Declaración de Modelos tipo IEnumerable:
+    public ActionResult Index()
+    {
+        IEnumerable<Movie> movies = db.Movies.Include(m => m.Genre);
+        if (movies.Count() != 0)
+            return View(movies);
+        return View();
+    }
+
+    @model IEnumerable<Vidly.Models.Movie>
+    @foreach (var movie in Model)
+    {
+    <tr class="table-light">
+        <td> @movie.Genre.Name</td>
+    </tr>
+    }

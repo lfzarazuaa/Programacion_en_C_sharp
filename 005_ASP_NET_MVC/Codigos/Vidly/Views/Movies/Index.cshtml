@@ -1,4 +1,4 @@
-﻿
+﻿@model IEnumerable<Vidly.Models.Movie>
 @{
     ViewBag.Title = "Movies";
     Layout = "~/Views/Shared/_Layout.cshtml";
@@ -15,14 +15,16 @@ else
         <thead>
             <tr>
                 <th scope="col">Movie</th>
+                <th scope="col">Genre</th>
             </tr>
         </thead>
         <tbody class="table-striped">
             @foreach (var movie in Model)
             {
-                <tr class="table-light">
-                    <td> @Html.ActionLink((string)movie.Name, "MovieDetails", "Movies", new { id = movie.Id }, null)</td>
-                </tr>
+            <tr class="table-light">
+                <td> @Html.ActionLink((string) movie.Name, "MovieDetails", "Movies", new { id = movie.Id }, null)</td>
+                <td> @movie.Genre.Name</td>
+            </tr>
             }
         </tbody>
     </table>

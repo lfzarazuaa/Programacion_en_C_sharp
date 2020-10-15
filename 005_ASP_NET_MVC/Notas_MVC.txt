@@ -21,7 +21,7 @@ Al crear el proyecto en ASP.NET con MVC tenemos:
         - Incluye las clases que se van a llamar cuando la aplicación se inicializa.
         Archivo RouteConfig.cs:
             - Contiene información de las rutas a usar.
-            - Por defecto contiene una ruta con el nombre default, con un patrón de url asignado, si se empareja con ese patrón accedera conforme lo indicado.
+            - Por defecto contiene una ruta con el nombre default, con un patrón de url asignado, si se empareja con ese patrón Coincidera conforme lo indicado.
             public static void RegisterRoutes(RouteCollection routes)
             {
                 routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
@@ -38,14 +38,14 @@ Al crear el proyecto en ASP.NET con MVC tenemos:
             - Llama a la clase controller indicada, action ejecuta el método de la clase controller indicado y pasa el parámetro si se asignó.
             - En la opción defaults asigna los parámetros si no se pasaron, si solo se paso el controlador, por defecto llama a la acción indicada en action.
             - Ruta: /movies/popular
-                - movies (controller): Accede a MoviesController.
-                - popular (action): Accede al método Popular de la clase MoviesController.
+                - movies (controller): Coincide a MoviesController.
+                - popular (action): Coincide al método Popular de la clase MoviesController.
             - Ruta: /movies/edit/1
-                - movies (controller): Accede a MoviesController.
-                - edit (action): Accede al método Edit(int id) de la clase MoviesController.
+                - movies (controller): Coincide a MoviesController.
+                - edit (action): Coincide al método Edit(int id) de la clase MoviesController.
                 - 1 (id): Pasa el parámetro id al método Edit(int id), como el tipo declarado en el método.
             - Ruta: /movies:
-                - movies (controller): Accede a MoviesController.
+                - movies (controller): Coincide a MoviesController.
                 - Index (action): Llama a la acción por defecto MoviesController.Index().
                 - Opcional (id): Al ser UrlParameter.Optional no asigna nada pues el parámetro id es declarado como opcional.
     - Content:
@@ -235,4 +235,296 @@ Cambio de tema
 
     - En bundle config se puede empaquetar varios archivos de js que se manejen juntos, esto para solo hacer una petición http.
 
+Action Result
+    - ActionResult es la clase base que se regresa en todas las petiociones que se le hacen al controlador.
 
+    - Dependiendo de lo que realice el controlador puede devolver distintos tipos de respuestas.
+
+    - El método View(movie) es el método base heredado de la clase Controller, el cual nos permite regresar una vista por defecto.
+
+        // Get Movies/Random
+        public ActionResult Random()
+        {
+            var movie = new Movie() { Name = "Shrek!"}; // Instancia el modelo.
+            return View(movie); // Llama a la vista de nombre Random.
+            // return new ViewResult(); // Llama a la vista por medio de la creación de una instancia.
+        }
+
+    - Cuando se llama al método View(), en realidad se está regresando un ViewResult, por lo cual en el método de regreso también sería valido colocar:
+        public ViewResult Random(){return View();}
+    
+    - Colocar ViewResult es válido es los test para evitar una conversión de dato Cast.
+
+    -Existen varios tipos de respuestas que se pueden regresar para los cuales también existe un método derivado de controller que nos crea el objeto y devuelve el tipo de respuesta que deseamos.
+        - Tipo: ViewResult, Método: View()
+        - Tipo: PartialViewResult, Método: PartialView()
+        - Tipo: ContentViewResult, Método: ContentView()
+        - Tipo: RedirectViewResult, Método: RedirectView()
+        - Tipo: RedirectToRouteResult, Método: RedirectToAction()
+        - Tipo: JsonResult, Método: Json()
+        - Tipo: FileResult, Método: File()
+        - Tipo: HttpNotFoundResult, Método: HttpNotFound()
+        - Tipo: EmptyResult
+
+        public ActionResult Random()
+        {
+            var movie = new Movie() { Name = "Shrek!"}; // Instancia el modelo.
+            //return View(movie); // Llama a la vista de nombre Random.
+            //return Content("Hello World"); // Respuesta con texto plano
+            //return HttpNotFound(); // Error 404.
+            // return new EmptyResult(); // Devuelve página en blanco.
+            return RedirectToAction("Index", "Home", new { page = 1, sortby="name"}); // Redirecciona al método indicado con los parámetros indicados.
+        }
+
+Action Parameters
+    - Son las entradas que tienen los action methods.
+    - ASP.NET automáticamente convierte los parámetros de las peticiones http en parámetros que reciban los action methods.
+    - Los formatos en los que ASP.NET puede recibir los parámetros son:
+        - En la URL: movies/edit/1
+        - En una consulta tipo string: /movies/edit?id=1 
+        - En tipo form data: id=1
+    - Método que acepta parámetro distinto a id.
+        public ActionResult Edit(int movieId)
+        {
+            return Content("id=" + movieId);
+        }
+    - Para declarar parámetros opcionales y evitar que la pagina se caiga se usan tipo nullable y una validación:
+        // Declaración de parámetros tipo nullable para poder ser opcionales.
+        public ActionResult Index(int? pageIndex, string sortBy) 
+        {
+            if (!pageIndex.HasValue)
+            {
+                pageIndex = 1;
+            }
+            if (String.IsNullOrWhiteSpace(sortBy))
+            {
+                sortBy = "Name";
+            }
+
+            return Content($"pageIndex={pageIndex} & sortBy{sortBy}");
+        }
+    
+Rutas Personalizadas
+    Las rutas personalizadas se añaden en:
+        App_Start/RouteConfig.cs
+    - Añadir una ruta personalizada:
+        routes.MapRoute( // Creación de ruta personalizada.
+                    name: "MoviesByReleaseDate",
+                    url: "movies/released/{year}/{month}",
+                    defaults: new { controller = "Movies", action = "ByReleaseDate"},
+                    constraints: new { year = @"\d{4}", month = @"\d{2}" } // Expresión regular a cumplir 4 dígitos para el año y 2 dígitos para el mes.
+                );
+    - Acción para recibir los parámetros de la ruta personalizada.
+        public ActionResult ByReleaseDate(int year, int month)
+        {
+            return Content($"year: {year}, month: {month}");
+        }
+
+Attribute Routing
+    - Si se usa la configuración de routing con las "magic string", tendrá problemas como:
+        - Tener muchas rutas declaradas convirtiendolas en un laberinto.
+        - Estar cambiando entre archivos para agregar las rutas.
+        - Al realizar un refactoring automático sobre la acción, no se altera el magic string y muestra el error hasta que se trata de invocar la rutas.
+    - Attribute routing permite definir la ruta por encima del método haciéndolo más descriptivo y fácil de identificar.
+    - Para activar attribute routing se debe ejecutar en RegisterRoutes()
+        routes.MapMvcAttributeRoutes();
+    - Para hacer asignar una ruta se usa:
+        [Route("movies/release/{year}/{month:regex(\\d{2}:range(1,12)}")]
+        public ActionResult ByReleaseYear(int year, int month)
+        {
+            return Content($"year: {year}, month: {month}");
+        }
+    - En attribut routing se define la ruta con [Route(url)].
+    - Para asignar restricciones a las variables se usa ":" y el tipo de restricción a usar.
+        - :regex(\\d{2}) : Función para concordar con la expresión regular.
+        - :range(1,12) : Función que acepta dentro de un rango de números.
+        - :range(1,12) : Función que acepta dentro de un rango de números.
+    - Algunas restricciones para poder aplicar son:
+        - alpha, {x:alpha} : Coincide si es una letra del alfabeto (a-z) (A-Z).
+        - bool, {x:bool} : Coincide si es un dato booleano.
+        - datetime, {x:datetime} : Coincide si es un valor Datetime.
+        - decimal, {x:decimal} : Coincide si es un valor decimal.
+        - double, {x:double} : Coincide si es un valor de punto flotante de 64 bits.
+        - float, {x:float} : Coincide si es un valor de punto flotante de 32 bits.
+        - guid, {x:guid} : Coincide si es un valor GUID.
+        - int, {x:int} : Coincide si es un entero de 32 bits.
+        - length, {x:length(6)} o {x:length(1,20)} : Coincide si una cadena tiene la longitud especificada.
+        - long, {x:long} : Coincide si es es un entero de 64 bits. 
+        - max, {x:max(10)} : Coincide si el entero está dentro del maximo.
+        - maxlength, {x:maxlength(10)} : Coincide si la cadena está dentro del maximo. 
+        - min, {x:min(10)} : Coincide si el entero está dentro del mínimo.
+        - minlength, {x:minlength(10)} : Coincide si la cadena está dentro del mínimo. 
+        - range, {x:range(10,50)} : Coincide si el entero está dentro del rango. 
+        - regex, {x:regex(^\d{3}-\d{3}-\d{4}$)} : Coincide si la cadena cumple con la expresión regular.
+    - Documentación: https://docs.microsoft.com/en-us/aspnet/web-api/overview/web-api-routing-and-actions/attribute-routing-in-web-api-2
+
+Pasar información a la vista.
+    - Todos las vistas y controladores tienen un diccionario llamado ViewData que nos permite pasar valores a la vista, View Data es de tipo ViewDataDictionary, ViewData tiene el problema de magic string.
+        - Método del controlador.
+        public ActionResult Random()
+        {
+            var movie = new Movie() { Name = "Shrek!"}; // Instancia el modelo.
+            ViewData["Movie"] = movie; //Guarda en el diccionario la variable movie.
+            return View(); // Llama a la vista de nombre Random.
+        }
+        - Vista con ViewBag (se necesita importar el modelo con using y hacer un cast para hacer uso del diccionario).
+        @using Vidly.Models
+
+        @{
+            ViewBag.Title = "Random";
+            Layout = "~/Views/Shared/_Layout.cshtml";
+        }
+
+        <h2>@(((Movie)ViewData["Movie"]).Name)</h2>
+    - Las vistas también cuentan con ViewBag que permite agregar nuevas propiedades dinámicamente, por lo cual si hay un error se sabrá hasta la ejecución.
+        - Método del controlador.
+        public ActionResult Random()
+        {
+            var movie = new Movie() { Name = "Shrek!"}; // Instancia el modelo.
+            ViewBag.myMovie = movie;
+            return View(); // Llama a la vista de nombre Random.
+        }
+        - Vista con ViewBag.
+        @{
+            ViewBag.Title = "Random";
+            Layout = "~/Views/Shared/_Layout.cshtml";
+        }
+
+        <h2>@ViewBag.myMovie.Name</h2>
+    - Implementación de model en las vistas - controladores.
+        - Modelo en el controlador.
+        public ActionResult Random()
+        {
+            var movie = new Movie() { Name = "Shrek!"}; // Instancia el modelo.
+            ViewBag.myMovie = movie; // Guarda dinámicamente el objeto (no necesita casting).
+            var viewResult = new ViewResult();
+            viewResult.ViewData.Model = movie;
+            return viewResult; // Llama a la vista de nombre Random.
+        }
+        - Modelo en la vista.
+        @{
+            ViewBag.Title = "Random";
+            Layout = "~/Views/Shared/_Layout.cshtml";
+        }
+
+        <h2>@Model.Name</h2>
+
+View Model
+    - Son modelos para un tipo de datos específico como el realizar un join entre movie y customer para saber que peliculas han comprado determinadas personas.
+    - Estos modelos se cargan en la definición de las listas de la misma manera, mediante el código razor se pueden ir realizando las operaciones necearias para visualizar la información.
+        // Código controlador.
+        public ActionResult Random()
+        {
+            var movie = new Movie() { Name = "Shrek!"}; // Instancia la película.
+            var customers = new List<Customer>()
+            {
+                new Customer { Id = 1, Name = "Miranda" },
+                new Customer { Id = 2, Name = "Merritt" },
+                new Customer { Id = 3, Name = "Tad" },
+                new Customer { Id = 4, Name = "Galvin" },
+                new Customer { Id = 5, Name = "Allen" }
+            }; // Inicializa los compradores.
+            var viewModel = new RandomMovieViewModel
+            {
+                Movie = movie,
+                Customers = customers
+            }; // Inicializa view model.
+            return View(viewModel); // Llama a la vista de nombre Random con viewModel.
+        }
+
+        @model Vidly.ViewModels.RandomMovieViewModel
+
+        @{
+            ViewBag.Title = "Random";
+            Layout = "~/Views/Shared/_Layout.cshtml";
+        }
+
+        <h2>@Model.Movie.Name</h2>
+        @if (Model.Customers.Count == 0)
+        {
+            <p> No one hast rented this movie before.</p>
+        }
+        else
+        {
+            <ul>
+                @foreach (var customer in Model.Customers)
+                {
+                    <li>@customer.Name</li>
+                }
+            </ul>
+        }
+    - Sintaxis condicional con razor (Dependiendo del modelo asigna la clase popular al header o null para que no aparezca nada).
+        @{ 
+            var className = Model.Customers.Count() > 5 ? "popular" : null;
+        }
+
+        <h2 class="@className">@Model.Movie.Name</h2>
+Partials View
+    - Son las vistas que se colocan dentro de su vista padre.
+    - Se acostumbra usar vistas parciales para procesar una pequeña parte de html y que asi sea mas legible el documento.
+    - Las vistas parciales se añaden en shared.
+    - Por convención las vistas parciales se nombran usando un guión bajo, _NombreVista.
+    - Las vistas parciales no tienen Layout por defecto, pues no es la página completa a mostrar sino un segmento o componente que se agregará.
+    - Para crear una vista parcial se va agregar vistas se seleciona vista parcial y se asigna un nombre y ubicación a la vista.
+    - Vista parcial del navbar:
+        <div class="navbar navbar-inverse navbar-fixed-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    @Html.ActionLink("Nombre de la aplicación", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+                </div>
+                <div class="navbar-collapse">
+                    <ul class="nav navbar-nav">
+                        <li>@Html.ActionLink("Inicio", "Index", "Home")</li>
+                        <li>@Html.ActionLink("Acerca de", "About", "Home")</li>
+                        <li>@Html.ActionLink("Contacto", "Contact", "Home")</li>
+                    </ul>
+                    @Html.Partial("_LoginPartial")
+                </div>
+            </div>
+        </div>
+    - Para renderizar la vista se llama ya sea en una vista, layout o u otra vista parcial con el nombre de la vista y con un modelo como parámetro opcional:
+        @Html.Partial("_NombreVista")
+        @Html.Partial("_NombreVista", modelo)
+
+Sintaxis Razor con elementos html
+    <table class=“table table-striped table-hover” style="width: 100%">
+        <thead>
+            <tr>
+                <th scope="col">Customer</th>
+            </tr>
+        </thead>
+        <tbody class="table-striped">
+            @foreach (var customer in Model)
+            {
+                <tr class="table-light">
+                    <td> <a href="~/Customers/Details/@customer.Id">@customer.Name</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+Creando links
+    - Un link puede ser declarado con la etiqueta a como comunmente se hace en html.
+        - Link con etiqueta a y ruta relativa a la página (.).
+            <a href="./Customers/Details/@customer.Id">@customer.Name</a>
+        - Link con etiqueta a y ruta desde la raiz (~).
+            <a href="~/Customers/Details/@customer.Id">@customer.Name</a>
+    - Además de usar link por medio de la etiqueta a se puede usar el Html helper proveido por el framework, el cual nos posibilita referenciar directamente al controlador y la acción al que se redirigirá.
+    - Con @Html.ActionLink se pasan los parámetros y clase(css) de la etiqueta por medio de un objeto anónimo.
+        - Prototipos de @Html.ActionLink
+            public static MvcHtmlString ActionLink(this HtmlHelper htmlHelper, string linkText, string actionName, string controllerName);
+            public static MvcHtmlString ActionLink(this HtmlHelper htmlHelper, string linkText, string actionName, string controllerName, object routeValues, object htmlAttributes);
+            public static MvcHtmlString ActionLink(this HtmlHelper htmlHelper, string linkText, string actionName, string controllerName, RouteValueDictionary routeValues, IDictionary<string, object> htmlAttributes);
+        - Link con @Html.ActionLink sin parámetro y sin clase css.
+            @Html.ActionLink("Vidly", "Index", "Home")
+        - Link con @Html.ActionLink sin parámetro y con clase css.
+            @Html.ActionLink("Movies", "Index", "Movies", new { area = "" }, new { @class = "nav-link" })
+        - Link con @Html.ActionLink sin parámetro y con clase css.
+            @Html.ActionLink("Movies", "Index", "Movies", new { area = "" }, new { @class = "nav-link" })
+        - Link con @Html.ActionLink pasando parámetro id y sin clase css.
+            @Html.ActionLink((string)movie.Name, "MovieDetails", "Movies", new { id = movie.Id }, null)

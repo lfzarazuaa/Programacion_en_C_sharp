@@ -4,3 +4,5 @@ ctrl + f5 : Abrir en el navegador la vista sobre la que se está posicionado.
 alt + shift + b : Compila la aplicación sin abrir una nueva ventana.
 mvcaction + tab: Crear método tipo action.
 f2 : Renombrar la variable o declaración sobre la cual se trabaja.
+ctrl + m + ctrl + g: Abrir vista correspondiente a la accion del controlador.
+ctrl + num / : Abrir consola nuget en Visual Studio.

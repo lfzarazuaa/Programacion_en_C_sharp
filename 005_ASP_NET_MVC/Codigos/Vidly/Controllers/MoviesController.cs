@@ -41,6 +41,47 @@ namespace Vidly.Controllers
             return HttpNotFound();
         }
 
+        [Route("Movies/Add")]
+        public ActionResult AddMovie()
+        {
+            var viewModel = new MovieFormViewModel { Genres = db.Genres.ToList() };
+            return View("MovieForm", viewModel);
+        }
+
+        [Route("Movies/Edit/{id}")]
+        public ActionResult EditMovies(int id)
+        {
+            var customer = db.Movies.FirstOrDefault(m => m.Id.Equals(id));
+            if (customer == null)
+                return HttpNotFound();
+            var viewModel = new MovieFormViewModel
+            {
+                Movie = customer,
+                Genres = db.Genres.ToList()
+            };
+            return View("MovieForm", viewModel);
+        }
+
+        [HttpPost]
+        public ActionResult SaveMovie(Movie movie)
+        {
+            if (movie.Id <= 0) // Sin Id asignado agregar customer.
+            {
+                movie.DateAdded = DateTime.Now;
+                db.Movies.Add(movie);
+            }
+            else
+            {
+                var updated_movie = db.Movies.FirstOrDefault(m => m.Id.Equals(movie.Id));
+                updated_movie.Name = movie.Name;
+                updated_movie.ReleaseDate = movie.ReleaseDate;
+                updated_movie.GenreId = movie.GenreId;
+                updated_movie.NumberInStock = movie.NumberInStock;
+            }
+            db.SaveChanges();
+            return RedirectToAction("Index", "Movies");
+        }
+
         private static IEnumerable<Movie> GetMovies()
         {
             return new List<Movie>()

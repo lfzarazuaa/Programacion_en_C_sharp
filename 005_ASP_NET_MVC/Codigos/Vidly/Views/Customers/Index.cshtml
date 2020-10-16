@@ -1,11 +1,12 @@
-﻿
+﻿@model IEnumerable<Vidly.Models.Customer>
 @{
     ViewBag.Title = "Customers";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <h2>Customers</h2>
-@if (Model==null)
+@Html.ActionLink("Add new Customer", "AddCustomer", "Customers", null, new { @class = "btn btn-primary" })
+@if (Model == null)
 {
     <p>We don't have any customers yet</p>
 }
@@ -21,10 +22,10 @@ else
         <tbody class="table-striped">
             @foreach (var customer in Model)
             {
-            <tr class="table-light">
-                <td> <a href="~/Customers/Details/@customer.Id">@customer.Name</a></td>
-                <td> @customer.MembershipType.Name</td>
-            </tr>
+                <tr class="table-light">
+                    <td> @Html.ActionLink(customer.Name, "Edit", "Customers", new { id = customer.Id }, null)</td>
+                    <td> @customer.MembershipType.Name</td>
+                </tr>
             }
         </tbody>
     </table>

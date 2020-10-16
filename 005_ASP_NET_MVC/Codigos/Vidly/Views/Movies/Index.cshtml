@@ -5,7 +5,8 @@
 }
 
 <h2>Movies</h2>
-@if (Model==null)
+@Html.ActionLink("Add New Movie", "AddMovie", "Movies", null, new { @class = "btn btn-primary" })
+@if (Model == null)
 {
     <p>We don't have any movies yet</p>
 }
@@ -16,14 +17,16 @@ else
             <tr>
                 <th scope="col">Movie</th>
                 <th scope="col">Genre</th>
+                <th scope="col">Details</th>
             </tr>
         </thead>
         <tbody class="table-striped">
             @foreach (var movie in Model)
             {
             <tr class="table-light">
-                <td> @Html.ActionLink((string) movie.Name, "MovieDetails", "Movies", new { id = movie.Id }, null)</td>
+                <td> @Html.ActionLink((string)movie.Name, "EditMovies", "Movies", new { id = movie.Id }, null)</td>
                 <td> @movie.Genre.Name</td>
+                <td> @Html.ActionLink("See Details 👁‍", "MovieDetails", "Movies", new { id = movie.Id }, new { @class="btn btn-secondary" })</td>
             </tr>
             }
         </tbody>

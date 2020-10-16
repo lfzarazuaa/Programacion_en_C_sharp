@@ -5,27 +5,28 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using Vidly.Models;
+using Vidly.ViewModels;
 
 namespace Vidly.Controllers
 {
     public class CustomersController : Controller
     {
-        private ApplicationDbContext _context;
+        private ApplicationDbContext db;
         
         public CustomersController()
         {
-            _context = new ApplicationDbContext();
+            db = new ApplicationDbContext();
         }
 
         protected override void Dispose(bool disposing)
         {
-            _context.Dispose(); // Limpia dbContext de la memoria.
+            db.Dispose(); // Limpia dbContext de la memoria.
         }
 
         public ActionResult Index()
         {
-            var customers = _context.Customers.Include(c => c.MembershipType).ToList();
-            if (customers.Count == 0)
+            IEnumerable<Customer> customers = db.Customers.Include(c => c.MembershipType);
+            if (customers.Count() == 0)
                 return View();
             return View(customers);
         }
@@ -33,15 +34,52 @@ namespace Vidly.Controllers
         [Route("Customers/Details/{id}")]
         public ActionResult CustomerDetails(int id)
         {
-
-            var customers = _context.Customers;
-            var customer = customers.Include(c => c.MembershipType).FirstOrDefault(c => c.Id == id);
+            var customer = db.Customers.Include(c => c.MembershipType).FirstOrDefault(c => c.Id == id);
             if (customer==null)
                 return HttpNotFound();
             return View(customer);
         }
 
+        [Route("Customers/Edit/{id}")]
+        public ActionResult EditCustomer(int id)
+        {
+            var customer = db.Customers.SingleOrDefault(c => c.Id.Equals(id));
+            if (customer == null)
+                return HttpNotFound();
+            var viewModel = new CustomerFormViewModel
+            {
+                Customer = customer,
+                MembershipTypes = db.MembershipTypes.ToList()
+            };
+            return View( "CustomerForm", viewModel );
+        }
 
+        [Route("Customers/Add")]
+        public ActionResult AddCustomer()
+        {
+            var membershipTypes = db.MembershipTypes.ToList();
+            var viewmodel = new CustomerFormViewModel { MembershipTypes = membershipTypes };
+            return View( "CustomerForm", viewmodel);
+        }
+        
+        [HttpPost]
+        public ActionResult SaveCustomer(Customer customer)
+        {
+            if (customer.Id <= 0) // Sin Id asignado agregar customer.
+            {
+                db.Customers.Add(customer);
+            }
+            else // Con Id asignado actualizar customer.
+            {
+                var updated_customer = db.Customers.FirstOrDefault(c => c.Id.Equals(customer.Id));
+                updated_customer.Name = customer.Name;
+                updated_customer.MembershipTypeId = customer.MembershipTypeId;
+                updated_customer.IsSubscribedToNewsletter = customer.IsSubscribedToNewsletter;
+                //TryUpdateModel(updated_customer, "", new string[] { "Name", "MembershipTypeId", "IsSubscribedToNewsletter" });
+            }
+            db.SaveChanges();
+            return RedirectToAction("Index","Customers");
+        }
     }
 
 }

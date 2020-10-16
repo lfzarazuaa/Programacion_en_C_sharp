@@ -724,3 +724,91 @@ Agregar nuevo campo con datos
         <td> @movie.Genre.Name</td>
     </tr>
     }
+
+Formularios
+    - Para hacer formularios ASP.NET tiene un Html Helper que se encarga de crear las etiquetas de formulario <form> </form>, limpiar el objeto de memoria (usando using) y asociarlo a una acción declarada en el controlador.
+    - Formulario que pasa la información por POST en la acción Create del controlador Customers.
+        @using (@Html.BeginForm("Create", "Customers"))
+        {
+
+        }
+    - Para darle estilo de bootstrap se usa dentro de using:
+        <div class="form-group"> </div>
+    - Para declarar la etiqueta del nombre de un campo se puede usar.
+        - Etiqueta por html por defecto. 
+            <label for="Name"> </label>
+        - Html helper (se le asigna el nombre de la propiedad sobre la cual está asignada).
+            @Html.LabelFor(m => m.Name)
+            Resultado en html: <label for="Name">Name</label>
+    - Para cambiar el texto del label se puede definir en la entidad un Data DataAnotation para ese campo.
+        [Display(Name = "Date of Birth")]
+        public DateTime? Birthdate { get; set; }
+    - Para declarar el campo de datos (textbox) se usa un HtmlHelper el cual nos ayuda con las validaciones definidas en las DataAnnotations
+            @Html.TextBoxFor(m => m.Name)
+            Resultado en html: <input data-val="true" data-val-length="El campo Name debe ser una cadena con una longitud máxima de 255." data-val-length-max="255" data-val-required="El campo Name es obligatorio." id="Name" name="Name" type="text" value="">
+    - En el html TextBoxFor se puede definir la clase de la siguiente manera:
+        @Html.TextBoxFor(m => m.Name, new { @class = "form-control" } )
+    - Para trabajar con formato de tipo fecha se puede usar la expresión de formato {0} indica el valor del primer parámetro.
+        @Html.TextBoxFor(m => m.Customer.Birthdate, "{0:d MMM yyyy}", new { @class = "form-control" })
+        @Html.TextBoxFor(m => m.Customer.Birthdate, "{0:dddd, dd MMMM yyyy}", new { @class = "form-control" })
+    - Para verificar casillas booleanas se usa el HtmlHelper CheckBoxFor
+        @Html.CheckBoxFor(m => m.IsSubscribedToNewsletter)
+
+Dropdown List
+    - Para crear un Dropdown List por lo general se requiere llamar las opciones de otra tabla de la base de datos por lo cual es recomenable crear su propio modelo en la carpeta con todas las ViewModels.
+    - La función Html.DropdownList contiene los siguientes elementos:
+        - public static MvcHtmlString DropDownListFor<TModel, TProperty>(this HtmlHelper<TModel> htmlHelper, Expression<Func<TModel, TProperty>> expression, IEnumerable<SelectListItem> selectList, string optionLabel, object htmlAttributes);
+        - expresion: Función lambda con la propiedad que se referencia.
+        - selectList: Objeto SelectListItem con las opciones a pasar.
+        - SelectListItem: new SelectList(Model.MembershipTypes, "Id", "Name"):
+            1 arg: DataItems (Valores de la lista)
+            2 arg: Campo del valor (por lo general Id).
+            3 arg: Campo del valor Visible (por lo general Name).
+        - optionLabel: Texto por defecto del DropdownList.
+        - htmlAttributes: Objeto anónimo con los atributos html (clase id).
+    - Ejemplo de DropdownList:
+        @Html.DropDownListFor(m => m.Customer.MembershipTypeId, new SelectList(Model.MembershipTypes, "Id", "Name"), "Select Membership Type", new { @class = "form-control" })
+Data Binding
+    - Al enviar la información a través de un formulario se envían los campos definidos en el formulario a traves de form data, las llaves de estos son pasados a través de POST y cuando los recibe el controlador (POST) este infiere todos los campos posibles a asignar al ojeto y los guarda.
+    - Declaración de Método POST para procesar la solicitud del formulario de agregar un usuario.
+        [HttpPost]
+        public ActionResult Create(Customer customer)
+        {
+            db.Customers.Add(customer); // Agregar al contexto.
+            db.SaveChanges(); // Realizar los cambios en la base de datos.
+
+            return RedirectToAction("Index","Customers");
+        }
+
+Add-Update
+    Cuando se usa una vista con un modelo definido para poder agergar o actualizar dependiendo de la acción indicada por la url, se puede agregar o editar eligiendo 2 caminos:
+        - Mostrar una vista general y dependiendo si el Id no es nulo (al usar data binding es nulo para add y con valor para edit), en el controlador decidir si se agrega o se actualiza.
+        - En la vista revisar si el Id es nulo y conforme al valor decidir si mostrar una vista de agregar con acción agregar al controlador o una vista editar con acción editar en el controlador.
+    - Usando la primera implementación el código queda así:
+        - En el controlador se lee el valor de Id.
+            [HttpPost]
+            public ActionResult SaveCustomer(Customer customer)
+            {
+                if (customer.Id <= 0) // Sin Id asignado agregar customer.
+                {
+                    db.Customers.Add(customer);
+                }
+                else // Con Id asignado actualizar customer.
+                {
+                    var updated_customer = db.Customers.FirstOrDefault(c => c.Id.Equals(customer.Id));
+                    updated_customer.Name = customer.Name;
+                    updated_customer.MembershipTypeId = customer.MembershipTypeId;
+                    updated_customer.IsSubscribedToNewsletter = customer.IsSubscribedToNewsletter;
+                    //TryUpdateModel(updated_customer, "", new string[] { "Name", "MembershipTypeId", "IsSubscribedToNewsletter" });
+                }
+                db.SaveChanges();
+                return RedirectToAction("Index","Customers");
+            }
+        - En la vista se agrega el campo del Id escondido.
+            @Html.HiddenFor(m => m.Customer.Id)
+    - Para actualizar la información con métodos automáticos de transferencia de datos se puede usar
+        TryUpdateModel(updated_customer, "", new string[] { "Name", "MembershipTypeId", "IsSubscribedToNewsletter" });
+        Mapper.Map(customer, updated_customer)
+    - Consejos para actualizar.
+        Cuando se trabaja con varias secciones de código y varias acciones como agregar y actualizar conviene hacer todo en pasos pequeños e ir validando parte por parte aun sabiendo que el método o la vista no contempla aun todos los casos.
+        En particular para una vista que actualice y agrege, primero hay que configurar todo para que agregue y luego para que actualice.

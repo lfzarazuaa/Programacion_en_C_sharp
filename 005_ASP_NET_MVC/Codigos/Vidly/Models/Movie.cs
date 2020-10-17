@@ -10,22 +10,26 @@ namespace Vidly.Models
     {
         public int Id { get; set; }
         
-        [Required]
-        [StringLength(255)]
+        [Required(ErrorMessage = "The Name field is required.")]
+        [StringLength(255, ErrorMessage = "The maximum length for the name is 255 characters")]
         public string Name { get; set; }
         
         public Genre Genre { get; set; }
-        [Required]
+        [Required(ErrorMessage = "The Genre field is required.")]
         [Display(Name = "Genre")]
         public int GenreId { get; set; }
-        
+
+        [Required(ErrorMessage = "The Release Date is required.")]
+        [DataType(DataType.DateTime, ErrorMessage = "The data type must be Datetime format.")]
         [Display(Name = "Release Date")]
         public DateTime ReleaseDate { get; set; }
 
         [Display(Name = "Date Added")]
         public DateTime DateAdded { get; set; }
 
-        [Display(Name = "Number In Stock")]
+        [Required(ErrorMessage = "The Number in Stock field is required.")]
+        [Range( 1 , 20, ErrorMessage = "The Number of movies must be between 1 and 20.")]
+        [Display(Name = "Number in Stock")]
         public int NumberInStock { get; set; }
     }
 

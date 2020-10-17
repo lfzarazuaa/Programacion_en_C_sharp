@@ -31,7 +31,7 @@ namespace Vidly.Controllers
             return View();
         }
 
-        
+
         [Route("Movies/Details/{id}")]
         public ActionResult MovieDetails(int id)
         {
@@ -44,7 +44,10 @@ namespace Vidly.Controllers
         [Route("Movies/Add")]
         public ActionResult AddMovie()
         {
-            var viewModel = new MovieFormViewModel { Genres = db.Genres.ToList() };
+            var viewModel = new MovieFormViewModel
+            {
+                Genres = db.Genres.ToList()
+            };
             return View("MovieForm", viewModel);
         }
 
@@ -65,6 +68,17 @@ namespace Vidly.Controllers
         [HttpPost]
         public ActionResult SaveMovie(Movie movie)
         {
+            movie.DateAdded = DateTime.Now;
+            if (!ModelState.IsValid)
+            {
+                var viewModel = new MovieFormViewModel
+                {
+                    Movie = movie,
+                    Genres = db.Genres.ToList()
+                };
+                return View("MovieForm", viewModel);
+            }
+
             if (movie.Id <= 0) // Sin Id asignado agregar customer.
             {
                 movie.DateAdded = DateTime.Now;
@@ -117,7 +131,7 @@ namespace Vidly.Controllers
         // Get Movies/Random
         public ActionResult Random()
         {
-            var movie = new Movie() { Name = "Shrek!"}; // Instancia el modelo.
+            var movie = new Movie() { Name = "Shrek!" }; // Instancia el modelo.
             var customers = new List<Customer>()
             {
                 new Customer { Id = 1, Name = "Miranda" },

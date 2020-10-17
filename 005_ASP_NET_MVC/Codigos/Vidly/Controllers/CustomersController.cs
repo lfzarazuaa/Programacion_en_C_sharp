@@ -12,7 +12,7 @@ namespace Vidly.Controllers
     public class CustomersController : Controller
     {
         private ApplicationDbContext db;
-        
+
         public CustomersController()
         {
             db = new ApplicationDbContext();
@@ -35,7 +35,7 @@ namespace Vidly.Controllers
         public ActionResult CustomerDetails(int id)
         {
             var customer = db.Customers.Include(c => c.MembershipType).FirstOrDefault(c => c.Id == id);
-            if (customer==null)
+            if (customer == null)
                 return HttpNotFound();
             return View(customer);
         }
@@ -51,20 +51,36 @@ namespace Vidly.Controllers
                 Customer = customer,
                 MembershipTypes = db.MembershipTypes.ToList()
             };
-            return View( "CustomerForm", viewModel );
+            return View("CustomerForm", viewModel);
         }
 
         [Route("Customers/Add")]
         public ActionResult AddCustomer()
         {
             var membershipTypes = db.MembershipTypes.ToList();
-            var viewmodel = new CustomerFormViewModel { MembershipTypes = membershipTypes };
-            return View( "CustomerForm", viewmodel);
+            var viewmodel = new CustomerFormViewModel
+            {
+                Customer = new Customer(),
+                MembershipTypes = membershipTypes
+            };
+            return View("CustomerForm", viewmodel);
         }
-        
+
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public ActionResult SaveCustomer(Customer customer)
         {
+            if (!ModelState.IsValid)
+            {
+                // Regresa un formulario con los datos para ser correctamente modificados.
+                var viewModel = new CustomerFormViewModel
+                {
+                    Customer = customer,
+                    MembershipTypes = db.MembershipTypes.ToList()
+                };
+                return View("CustomerForm", viewModel);
+            }
+
             if (customer.Id <= 0) // Sin Id asignado agregar customer.
             {
                 db.Customers.Add(customer);
@@ -78,7 +94,7 @@ namespace Vidly.Controllers
                 //TryUpdateModel(updated_customer, "", new string[] { "Name", "MembershipTypeId", "IsSubscribedToNewsletter" });
             }
             db.SaveChanges();
-            return RedirectToAction("Index","Customers");
+            return RedirectToAction("Index", "Customers");
         }
     }
 

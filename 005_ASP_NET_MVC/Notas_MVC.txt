@@ -806,9 +806,226 @@ Add-Update
             }
         - En la vista se agrega el campo del Id escondido.
             @Html.HiddenFor(m => m.Customer.Id)
+            @Html.HiddenFor(m => m.Movie.Id, new { Value = idValue })
     - Para actualizar la información con métodos automáticos de transferencia de datos se puede usar
         TryUpdateModel(updated_customer, "", new string[] { "Name", "MembershipTypeId", "IsSubscribedToNewsletter" });
         Mapper.Map(customer, updated_customer)
     - Consejos para actualizar.
         Cuando se trabaja con varias secciones de código y varias acciones como agregar y actualizar conviene hacer todo en pasos pequeños e ir validando parte por parte aun sabiendo que el método o la vista no contempla aun todos los casos.
         En particular para una vista que actualice y agrege, primero hay que configurar todo para que agregue y luego para que actualice.
+
+
+Validaciones con Data Annotations
+    - Las Data Annotations no solo son usadas para asignar las restricciones y propiedades de la entidad (tabla) o para usarlas con Display y mostrar el label deseado, sino que también son usadas para validar el modelo y mostrar los mensajes en la vista.
+    - Para usar las validaciones del modelo ingresado por el parámetro se llama a la función, con esto sabra si el parámetro ingresado cumple con las Data Annotations que se declararon:
+        ModelState.IsValid
+    - Para reflejar en la vista se usa el html helper ValidationMessagesFor, el cual al verificar el modelo se actualiza:
+        - Html Helper:
+            @Html.ValidationMessageFor(m => m.Customer.Name)
+        - Etiqueta generada sin error y con error.
+            <span class="field-validation-valid" data-valmsg-for="Customer.Name" data-valmsg-replace="true"></span>
+            <span class="field-validation-error" data-valmsg-for="Customer.Name" data-valmsg-replace="true">El campo Name es obligatorio.</span>
+    - Para las validaciones se pueden seguir 3 pasos.
+        - Declarar las Data Annotations en las entidades.
+        - Usar ModelState.IsValid en el controlador POST para verificar que la entidad sea válida.
+        - Agregar validaciones a la vista del formulario.
+
+Agregar estílos CSS para cada toda la página.
+    - Se accede a contents y a site.css se añaden los estilos que se quieran usar, al ser una página que siempre requiere una vista se configura en site.css que es el archivo del _Layout por defecto.
+    - Una forma de resaltar los campos es usando las clases que agrega Model.IsValid a los elementos.
+        Resalta el texto en rojo del mensaje.
+        .field-validation-error {
+            color: red;
+        }
+        Coloca las cajas de texto o de selección en rojo.
+        .input-validation-error {
+            border: 4px solid red;
+        }
+
+DataAnnotations
+    - Algunas Data Annotations posible son:
+        [Required]
+        [StringLength(255)]
+        [Range(1,10)]
+        [Compare("Other Property")]
+        [Phone]
+        [EmailAddress]
+        [Url]
+        [RegularExpresion""]
+    - Para sobrescribir el mensaje de error de las validaciones se usa la propiedad ErrorMessage de cada validación.
+        [Required(ErrorMessage = "Please enter customer's name.")]
+        [StringLength(255, ErrorMessage = "The maximun string length can be 255 characters.")]
+
+Validaciones Personalizadas
+    Para realizar nuestras propias validaciones podemos crear nuestra propia Data Annotation que recibe el modelo a validar y conforme a eso lo válida.
+    - Para usar la validación se hereda de la clase:
+        ValidationAttribute
+    - Se debe sobrescribir el método IsValid:
+        protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+    - Si la validación indica que el modelo es válido se envia:
+        ValidationResult.Success
+    - Si la validación indica que el modelo no es válido se envia:
+        new ValidationResult(ErrorMessage = "Mensaje de error.")
+    - Creación de validación personalizada heredando de Validation Attribute.
+        public class Min18YearsIfAMember : ValidationAttribute
+        {
+            protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+            {
+                Customer customer = (Customer)validationContext.ObjectInstance;
+
+                if (customer.MembershipTypeId == 0 || customer.MembershipTypeId == 1)
+                    return ValidationResult.Success;
+
+                if (customer.Birthdate == null)
+                    return new ValidationResult(ErrorMessage = "Birthdate is required.");
+
+                int age = CalculateAge(customer.Birthdate.Value);
+
+                bool HasMoreThan18Years = (age >= 18);
+
+                return HasMoreThan18Years
+                    ? ValidationResult.Success
+                    : new ValidationResult("Customer should be at least 18 years old to go on a membership.");
+
+            }
+
+            private int CalculateAge(DateTime birth)
+            {
+                DateTime today = DateTime.UtcNow.Date;
+                var age = today.Year - birth.Year;
+
+                // Si es mayor en mes o si es mayor en dias pero del mismo mes.
+                if (birth.Month > today.Month ||
+                    (birth.Month == today.Month && birth.Day > today.Day))
+                {
+                    age--;
+                }
+
+                return age;
+            }
+        }
+
+Manteneabilidad de la lógica del negocio.
+    - Cuando se usa código que va referente a la lógica del negocio, es preferente usar variables que expliquen el código y no solo una referencia númerica como en el caso de la membresía.
+        if (customer.MembershipTypeId == 0 || customer.MembershipTypeId == 1)
+                    return ValidationResult.Success;
+    - Cuando se usan variables hard-code estan pueden ser vulnerables y no mantenibles a lo largo del ciclo de vida del código por lo cual es recomendabel asignar un enum o una variable de solo lectura estática.
+    - Para declarar una variable de lectura estática se asigna como un atributo dentro del código de clase del modelo.
+        public class MembershipType
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public float SignUpFee { get; set; }
+            public byte DurationInMonths { get; set; }
+            public double DiscountRate { get; set; }
+
+            public static readonly int Unknown = 0;
+            public static readonly int PayAsYouGo = 1;
+        }
+    - Actualizando el código queda asignado de la siguiente manera.
+        if (customer.MembershipTypeId == MembershipType.Unknown ||
+                customer.MembershipTypeId == MembershipType.PayAsYouGo)
+                return ValidationResult.Success;
+
+Validation Sumary
+    - Con validation summary podemos mostrar todos los campos del modelo que no cumplen las condiciones en un solo bloque con la instrucción:
+        @Html.ValidationSummary()
+    - Cuando se usa ValidationSummary en la vista se debe considerar cada campo del formulario a evaluar en especial el Id del formulario cuando se va agregar un nuevo registro, ya que también incluye la validación para ese campo.
+    - Una manera de evitar el mensaje de error para la validación del Id es inicializando el valor del Id en 0 desde el controlador de la vista esto se puede hacer asignando el objeto pertinente al modelo de la vista como en el siguiente caso.
+        public ActionResult AddCustomer()
+        {
+            var membershipTypes = db.MembershipTypes.ToList();
+            var viewmodel = new CustomerFormViewModel
+            {
+                Customer = new Customer(), //Asignación de un nuevo objeto con Id=0 por defecto.
+                MembershipTypes = membershipTypes
+            };
+            return View("CustomerForm", viewmodel);
+        }
+    - Otra solución es asignar un valor al id ya sea para cuando es agregar o actualizar, usando viewBag o usando razor para verificar el modelo:
+        @{
+            bool isUpdating = !(Model.Movie == null || Model.Movie.Id == 0);
+            string title = isUpdating ? "Update Movie" : "Add New Movie";
+            int idValue = isUpdating ? Model.Movie.Id : 0;
+        }
+        @Html.HiddenFor(m => m.Movie.Id, new { Value = idValue })
+    - Adicionalmente se puede configurar si se desea mantener los detalles de los errores en el resumen y si se quiere un mensaje general que indique que hay errores, estos se pasan en el primer y segundo parámetro de la función respectivamente.
+        - Muestra mensaje general y mensaje para cada error.
+            - Html Helper:
+                @Html.ValidationSummary(false, "Please fix the following errors:")
+            - Etiquetas generadas:
+                <div class="validation-summary-errors" data-valmsg-summary="true">
+                    <span>Please fix the following errors:</span>
+                    <ul>
+                        <li>Please enter customer's name.</li>
+                        <li>Please select the Membership Type Id.</li>
+                    </ul>
+                </div>
+        - Solo muestra mensaje general muestra mensaje general.
+            - Html Helper:
+            @Html.ValidationSummary(true, "Please fix the following errors:")
+            - Etiquetas generadas:
+            <div class="validation-summary-errors">
+                <span>Please fix the following errors:</span>
+                <ul>
+                    <li style="display:none"></li>
+                </ul>
+            </div>
+
+Validaciones del lado del cliente.
+    - El usuario tiene una respuesta casi inmediata.
+    - No se gastan recursos del lado del servidor.
+    - En el layout la función RenderSection nos permite colocar código de js en la vista.
+        @RenderSection("scripts", required: false)
+    - Para usar código js en la vista se debe usar:
+        @section scripts
+        {
+            @Scripts.Render("~/bundles/jqueryval")    
+        }
+    - Las Data Annotations al momento de compilarse pueden usar las validaciones unobstructiva (que no afectan al servidor) si se llama el código js correspondiente en la vista:
+            @section scripts
+            {
+                @Scripts.Render("~/bundles/jqueryval")    
+            }
+    - Los validadores de js funcionan leyendo el contenido de los tags y conforme al contenido puede verificar si la validación es correcta o no.
+    - Las validaciones disponibles del lado del cliente en Data Annotation son:
+        [Required]
+        [StringLength(255)]
+        [Range(1, 10)]
+        [Compare("OtherProperty")]
+        [Phone]
+        [EmailAddress]
+        [Url]
+        [RegularExpresion("...")]
+        
+Anti-Forgery-Token
+    Son tokens para comprobar la identidad del usuario y que solo admina request válidas que fueron generadas desde la página.
+    - Cross-site Request Forgery: Es un método de ataque al usuario donde desde un sitio malicioso se hace una petición POST para modificar o acceder a los datos del usuario.
+    - Con un HtmlHelper podemos defender a nuestra aplicación de ese tipo de ataques usando [ValidateAntiForgeryToken] en la acción del controlador y @Html.AntiForgeryToken() en la vista para por medio de una cookie con el token correcto poder validar que la petición vino del sitio permitido.
+        
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult SaveCustomer(Customer customer)
+        {
+            ...
+        }
+
+        @Html.AntiForgeryToken()
+
+Programación con API
+    - Cuando se usa una API solo se devuelve la información desde el servidor sin tener que devolver todo el html de lo cual se encarga el cliente, esto nos ayuda en varios aspectos como:
+        - Menos recursos usados por el servidor.
+        - Menos transferencia de datos.
+        - Conectividad con varios clientes como web, escritorio y app.
+    - Algunas API que son públicas proveen sus datos para complementar la experiencia de navegación con sus funcionalidades y no tener que repetir todo el trabajo.
+    - El framework ASP.NET Web API es distinto al de ASP.NET MVC pero sigue los mismos principios de arquitectura.
+
+Covención Restful
+    Son API que usan los verbos http en conjunto con un Endpoint para realizar distintas acciones, generalmente referentes al CRUD.
+        - GET /api/customers
+        - GET /api/customers/1
+        - POST /api/customers
+        - PUT /api/customers/1
+        - DELETE /api/customers/1
+    REST significa Representational State Transfer
+    

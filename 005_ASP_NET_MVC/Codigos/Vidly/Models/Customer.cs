@@ -11,18 +11,20 @@ namespace Vidly.Models
     {
         public int Id { get; set; }
         
-        [Required]
-        [StringLength(255,ErrorMessage = "The maximun string length can be 255 characters.")]
+        [Required(ErrorMessage = "Please enter customer's name.")]
+        [StringLength(255,ErrorMessage = "The maximun string length is 255 characters.")]
         public string Name { get; set; }
-        
+
         [Display(Name = "Date of Birth")]
+        [Min18YearsIfAMember]
         public DateTime? Birthdate { get; set; }
         
         public bool IsSubscribedToNewsletter { get; set; }
-        
-        
-        public MembershipType MembershipType { get; set; }
+
         [Display(Name = "Membership Type")]
+        [Required(ErrorMessage = "Please select the Membership Type Id.")]
         public int MembershipTypeId { get; set; }
+        public MembershipType MembershipType { get; set; }
+        
     }
 }

@@ -1028,4 +1028,307 @@ Covención Restful
         - PUT /api/customers/1
         - DELETE /api/customers/1
     REST significa Representational State Transfer
-    
+
+Configurar API
+    Para agregar una API se agrega Web API en Blanco desde las acciones y se configura en el Archivo Global.asx.cs
+        protected void Application_Start()
+        {
+            GlobalConfiguration.Configure(WebApiConfig.Register); // Agregar esta línea de código al método.
+            AreaRegistration.RegisterAllAreas();
+            FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
+            RouteConfig.RegisterRoutes(RouteTable.Routes);
+            BundleConfig.RegisterBundles(BundleTable.Bundles);
+        }
+
+Declaración de la API
+    GET
+        // Obtener todos los recursos.
+        // Verbo GET: /api/customers
+        public IEnumerable<Customer> GetCustomers()
+        {
+            return db.Customers.ToList();
+        }
+
+        // Obtener un recurso específico.
+        // Verbo GET: /api/customers/1
+        public Customer GetCustomer(int id)
+        {
+            var customer = db.Customers.FirstOrDefault(c => c.Id.Equals(id));
+
+            if (customer == null)
+            {
+                throw new HttpResponseException(HttpStatusCode.NotFound);
+            }
+            return customer;
+        }
+    POST
+        // Crear un nuevo recurso
+        // Verbo POST: /api/customers
+        [HttpPost]
+        public Customer CreateCustomer(Customer customer)
+        {
+            if (!ModelState.IsValid)
+            {
+                throw new HttpResponseException(HttpStatusCode.BadRequest);
+            }
+            db.Customers.Add(customer);
+            db.SaveChanges();
+            return customer;
+        }
+    PUT
+        // Modificar un recurso existente.
+        // Verbo PUT: /api/customers/1
+        [HttpPut]
+        public void UpdateCustomer(int id, Customer customer)
+        {
+            if (!ModelState.IsValid || id != customer.Id)
+                throw new HttpResponseException(HttpStatusCode.BadRequest);
+
+            var customerInDb = db.Customers.FirstOrDefault(c => c.Id == id);
+
+            if (customerInDb == null)
+                throw new HttpResponseException(HttpStatusCode.NotFound);
+
+            customerInDb.Name = customer.Name;
+            customerInDb.Birthdate = customerInDb.Birthdate;
+            customerInDb.IsSubscribedToNewsletter = customerInDb.IsSubscribedToNewsletter;
+            customerInDb.MembershipTypeId = customerInDb.MembershipTypeId;
+
+            db.SaveChanges();
+        }
+
+    DELETE
+
+        // Verbo Delete: /api/customers/1
+        [HttpDelete]
+        public void DeleteCustomer(int id)
+        {
+            var customerInDb = db.Customers.FirstOrDefault(c => c.Id == id);
+
+            if (customerInDb == null)
+                throw new HttpResponseException(HttpStatusCode.NotFound);
+
+            db.Customers.Remove(customerInDb);
+
+            db.SaveChanges();
+        }
+
+Probar la API
+    - Si no se específica el tipo de contenido en la API entonces por defecto ASP.NET la envía en formato XML.
+    - Para probar la API por completo se debe probar cada endpoint en POSTMAN viendo los distintos casos.
+
+Data Transfer Objects
+    - Cuando se contruye una API se debe considerar que no puede cambiarse tan abruptamente pues otras aplicaciones dependen de este servicio, por lo tanto es necesario tener un objeto que no vaya a cambiar a pesar que la aplicación se actualice.
+    - Otro aspecto importante es la seguridad de los datos del modelo pues no debemos pasar todo el modelo a través de la API, sino solo que lo sea necesario, considerando así la realización de un nuevo modelo el cual sea pasado y enviado a través de la API.
+    - Los Data Transfer Objects son los modelos de los objetos que se van a pasar a través de la API ya sea para lectura o escritura.
+    - Con los DTO podemos especificar que información va a ser actualizada y cual no, librándonos asi de un ataque a información sensible.
+    - Un DTO el cual debe contener las mismas validaciones que el modelo que representa,
+    - La construcción de un DTO es de la siguiente forma.
+        public class CustomerDto
+        {
+            public int Id { get; set; }
+
+            [Required(ErrorMessage = "Please enter customer's name.")]
+            [StringLength(255, ErrorMessage = "The maximun string length is 255 characters.")]
+            public string Name { get; set; }
+
+            [Display(Name = "Date of Birth")]
+            [Min18YearsIfAMember]
+            public DateTime? Birthdate { get; set; }
+
+            public bool IsSubscribedToNewsletter { get; set; }
+
+            [Display(Name = "Membership Type")]
+            [Required(ErrorMessage = "Please select the Membership Type Id.")]
+            public int MembershipTypeId { get; set; }
+        }
+    - Cuando se usa un DTO se tienen que copiar los datos, esto se puede realizar manualmente asignando cada campo o usando automapper que con la referencia de los objetos hace el copiado automáticamente.
+    - Instalar automapper:
+        install-package automapper -version 4.1
+    - Crear un perfil de mapeo (en una clase que hereda de Profile) para saber como un objeto se va a copiar a otro objeto.
+        public class MappingProfile : Profile
+        {
+            public MappingProfile()
+            {
+                Mapper.CreateMap<Customer, CustomerDto>(); // Asignar valores de Customer a CustomerDto.
+                Mapper.CreateMap<CustomerDto, Customer>(); // Asignar valores de CustomerDto a Customer.
+            }
+        }
+    - Automapper usa reflexión para hacer el mapeo, lee los nombres de las propiedades y los que coincidan los asigna.
+    - Para inicializar automapper y que escanee los valores se llama en el en método de inicialización de Global.asax.cs .
+        protected void Application_Start()
+        {
+            Mapper.Initialize(conf => conf.AddProfile<MappingProfile>()); // Inicializar Mapeo.
+            ...
+        }
+    - Para convertir se usa el metodo Map de Mapper.
+        - public static TDestination Map<TSource, TDestination>(TSource source); // Método que convierte del tipo TSource al tipo TDestination, recibe como parámetro de entrada el objeto source de tipo Tsource y regresa como salida una instancia (objeto) de tipo TDestination.
+        - public static TDestination Map<TSource, TDestination>(TSource source, TDestination destination); // Método que convierte del tipo TSource al tipo TDestination, recibe como parámetro de entrada el objeto source de tipo Tsource y el objeto destination de tipo TDestination y regresa como salida una instancia (objeto) de tipo TDestination, guardando además en el objeto destination los datos.
+    - GetCustomers con Automapper:
+        public IEnumerable<CustomerDto> GetCustomers()
+        {
+            return db.Customers.ToList().Select(Mapper.Map<Customer, CustomerDto>); // Pasa como delegado el método Map que recibe un objeto de tipo Customer como parámetro.
+        }
+    - GetCustomer con Automapper:
+        public CustomerDto GetCustomer(int id)
+        {
+            var customer = db.Customers.FirstOrDefault(c => c.Id.Equals(id));
+            if (customer == null)
+                throw new HttpResponseException(HttpStatusCode.NotFound);
+            return Mapper.Map<Customer, CustomerDto>(customer);// Regresa un objeto CustomerDto con los valores coincidentes de customer.
+        }
+    - CreateCustomer con Automapper
+        [HttpPost]
+        public CustomerDto CreateCustomer(CustomerDto customerDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                throw new HttpResponseException(HttpStatusCode.BadRequest);
+            }
+            var customer = db.Customers.Add(Mapper.Map<CustomerDto, Customer>(customerDto));
+            db.SaveChanges();
+            customerDto.Id = customer.Id; // Asignar el Id dado desde la db.
+            return customerDto;
+        }
+    - Update Customer con Automapper
+        [HttpPut]
+        public void UpdateCustomer(int id, CustomerDto customerDto)
+        {
+            if (!ModelState.IsValid)
+                throw new HttpResponseException(HttpStatusCode.BadRequest);
+            var customerInDb = db.Customers.FirstOrDefault(c => c.Id == id);
+            if (customerInDb == null)
+                throw new HttpResponseException(HttpStatusCode.NotFound);
+            customerDto.Id = customerInDb.Id; // Asignar id pasado por parámetro.
+            // Se anulan los tipos porque el compilador los puede inferir.
+            Mapper.Map(customerDto, customerInDb); // Copiar los datos de customerDto a customer.
+            db.SaveChanges();
+        }
+
+Configuración de camel Notation:
+    - Para habilitar que el objeto se regrese respetando las notación CamelCase se puede configurar en WebApiConfig (equivalente a routeConfig de MVC), si se quiere usar camel Notation.
+    - Original con solo las rutas:
+        public static void Register(HttpConfiguration config)
+        {
+            config.MapHttpAttributeRoutes();
+
+            config.Routes.MapHttpRoute(
+                name: "DefaultApi",
+                routeTemplate: "api/{controller}/{id}",
+                defaults: new { id = RouteParameter.Optional }
+            );
+        }
+    - Añadiendo configuración CamelCase.
+        public static void Register(HttpConfiguration config)
+        {
+            var settings = config.Formatters.JsonFormatter.SerializerSettings; // Obtiene el objeto de ajustes del objeto de configuración http.
+            settings.ContractResolver = new CamelCasePropertyNamesContractResolver(); // Resuelve las peticiones JSON con CamelCase.
+            settings.Formatting = Formatting.Indented; // Devuelve el objeto indentado correctamente.
+
+            config.MapHttpAttributeRoutes();
+
+            config.Routes.MapHttpRoute(
+                name: "DefaultApi",
+                routeTemplate: "api/{controller}/{id}",
+                defaults: new { id = RouteParameter.Optional }
+            );
+        }
+
+IActionResult:
+    - Para la peticiones que adopten Restful se deben devolver diferentes estados de código que describen si la petición fue exitosa, si hbo un error en el servidor, si el recurso no fue encontrado o algún otro estado que haya ocurrido.
+    - https://tutorialshelper.com/web-api-helper-class/.
+    - https://docs.microsoft.com/en-us/dotnet/api/system.web.http.apicontroller.badrequest?view=aspnetcore-2.2
+    - Para validar un modelo se puede usar Validate<TEntity> (TEntity entity).
+    - Para IActionResult result se tienen varios métodos y distintos tipos de respuesta como los que se tenían en IActionResult:
+        BadRequest() : Error 400 Bad Request. 
+        BadRequest (string message): 400 Bad Request.
+        BadRequest (Microsoft.AspNetCore.Mvc.ModelBinding.ModelStateDictionary modelState): 400 Bad Request.
+        ConflictResult () : Error 409 Conflict.
+        Content((System.Net.HttpStatusCode statusCode, T value)) : Contenido con Resultado. 
+        Created (string location, object content) : 201 Created.
+        Created(Uri uri, object content) : 201 Created.
+        CreatedAtRoute (string routeName, object routeValues, object content): 201 Created.
+        InternalServerError () : 500 Internal Server Error.
+        Json<T> (T content, Newtonsoft.Json.JsonSerializerSettings serializerSettings, System.Text.Encoding encoding) : 200 OK.
+        Json<T> (T content, Newtonsoft.Json.JsonSerializerSettings serializerSettings) : 200 OK.
+        Json<T> (T content) : 200 OK.
+        NotFound () : 404 Not Found.
+        Ok () : 200 OK.
+        Ok<T> (T content): 200 OK.
+        Redirect (Uri location): 302 Found.
+        Redirect (string location): 302 Found.
+        RedirectToRoute (string routeName, object routeValues): 302 Found.
+        ResponseMessage (System.Net.Http.HttpResponseMessage response): Sin estado.
+        StatusCode (System.Net.HttpStatusCode status): Regresa el estado.
+
+API Con IActionResult
+
+    - Obtener todas las películas.
+        // Verbo GET: /api/movies
+        public IHttpActionResult GetMovies()
+        {
+            var moviesDto = db.Movies.ToList().Select(Mapper.Map<Movie, MovieDto>);
+            return Ok(moviesDto);
+        }
+
+    - Obtener una determinada película.
+        // Verbo GET: /api/movies/1
+        public IHttpActionResult GetMovie(int id)
+        {
+            var movie = db.Movies.FirstOrDefault(m => m.Id.Equals(id));
+            if (movie == null)
+                return NotFound();
+            return Ok(Mapper.Map<Movie, MovieDto>(movie)); // Respuesta Código 200 y objeto.
+        }
+
+    - Crear una nueva película.
+        // Verbo POST: /api/movies
+        [HttpPost]
+        public IHttpActionResult CreateMovie(MovieDto movieDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest($"The arguments are invalid: {movieDto}");
+            if (!db.Genres.Any(g => g.Id == movieDto.GenreId))
+                return BadRequest($"The genre don't exist.");
+            var movie = db.Movies.Add(Mapper.Map<MovieDto, Movie>(movieDto));
+            movie.DateAdded = DateTime.UtcNow; // Registrar la fecha de añadido.
+            db.SaveChanges();
+            movieDto.Id = movie.Id; // Asignar el Id desde la db.
+            movieDto.DateAdded = movie.DateAdded;// Regresar la fecha de añadido.
+            return Created(new Uri($"{Request.RequestUri}/{movieDto.Id}"), movieDto); // Crear recurso con estado 201 y pasar un objeto como respuesta.
+        }
+
+    - Actualizar una película existente.
+        // Verbo PUT: /api/movies/1
+        [HttpPut]
+        public IHttpActionResult UpdateMovie(int id, MovieDto movieDto)
+        {
+            var movieInDb = db.Movies.FirstOrDefault(m => m.Id == id);
+            if (movieInDb == null)
+                return NotFound();
+            if (!ModelState.IsValid)
+                return BadRequest($"The arguments are invalid, needed: {movieDto}");
+            if (!db.Genres.Any(g => g.Id == movieDto.GenreId))
+                return BadRequest($"The genre don't exist.");
+            movieDto.Id = movieInDb.Id; // Asignar id pasado por parámetro.
+            movieDto.DateAdded = movieInDb.DateAdded;// Asignar la fecha de añadido.
+            // Se anulan los tipos porque el compilador los puede inferir.
+            Mapper.Map(movieDto, movieInDb); // Copiar los datos de movieDto a movie.
+            db.SaveChanges();
+            return Ok(movieDto);
+        }
+
+    - Borrar una película.
+        // Verbo Delete: /api/movies/1
+        [HttpDelete]
+        public IHttpActionResult DeleteMovie(int id)
+        {
+            var movieInDb = db.Movies.FirstOrDefault(m => m.Id == id);
+            if (movieInDb == null)
+                return NotFound();
+            db.Movies.Remove(movieInDb);
+            db.SaveChanges();
+            return Ok("resource deleted");
+        }
+
+

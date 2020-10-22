@@ -1,9 +1,11 @@
-﻿using System;
+﻿using AutoMapper;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using Vidly.Dtos;
 
 namespace Vidly.Models
 {
@@ -11,8 +13,21 @@ namespace Vidly.Models
     {
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {
-            Customer customer = (Customer)validationContext.ObjectInstance;
-
+            Customer customer;
+            if (validationContext.ObjectInstance is Customer)
+            {
+               customer = (Customer)validationContext.ObjectInstance;
+            }
+            else if(validationContext.ObjectInstance is CustomerDto)
+            {
+                CustomerDto customerDto = (CustomerDto)validationContext.ObjectInstance;
+                customer = Mapper.Map<CustomerDto, Customer>(customerDto);
+            }
+            else
+            {
+                return new ValidationResult(ErrorMessage = "Invalid type.");
+            }
+                
             if (customer.MembershipTypeId == MembershipType.Unknown ||
                 customer.MembershipTypeId == MembershipType.PayAsYouGo)
                 return ValidationResult.Success;

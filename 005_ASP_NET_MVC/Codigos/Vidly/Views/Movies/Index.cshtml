@@ -12,25 +12,54 @@
 }
 else
 {
-    <table class=“table table-striped table-hover” style="width: 100%">
-        <thead>
+    <table id="movies" class="table table-striped table-hover" style="width: 100%">
+        <thead class="thead-dark">
             <tr>
-                <th scope="col">Movie</th>
+                <th scope="col">Movie (Edit)</th>
                 <th scope="col">Genre</th>
                 <th scope="col">Details</th>
+                <th scope="col">Delete</th>
             </tr>
         </thead>
-        <tbody class="table-striped">
+        <tbody>
             @foreach (var movie in Model)
             {
-            <tr class="table-light">
-                <td> @Html.ActionLink((string)movie.Name, "EditMovies", "Movies", new { id = movie.Id }, null)</td>
-                <td> @movie.Genre.Name</td>
-                <td> @Html.ActionLink("See Details 👁‍", "MovieDetails", "Movies", new { id = movie.Id }, new { @class="btn btn-secondary" })</td>
-            </tr>
+                <tr class="table-light">
+                    <td> @Html.ActionLink((string)movie.Name, "EditMovies", "Movies", new { id = movie.Id }, null)</td>
+                    <td> @movie.Genre.Name</td>
+                    <td> @Html.ActionLink("See Details 👁‍", "MovieDetails", "Movies", new { id = movie.Id }, new { @class = "btn btn-secondary" })</td>
+                    <td> <button data-movie-id="@movie.Id" class="btn btn-danger js-delete">Delete Movie</button></td>
+                </tr>
             }
         </tbody>
     </table>
+}
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+            let table = $("#movies").DataTable();
+
+            $("#movies_wrapper").css("width", "100%");
+            $("#movies_wrapper > div.row").addClass("col-sm-12");
+
+            $("#movies").on("click", ".js-delete", function () {
+                var button = $(this); // Obtiene la referencia del boton.
+                let delete_resource = function (result) {
+                    if (result) { // Si se eligió eliminar el recurso.
+                        $.ajax({ // Llamado de ajax para obtener el recurso.
+                            url: "/api/movies/" + button.attr("data-movie-id"), // url a consultar.
+                            method: "DELETE", // Verbo http.
+                            success: function () { // Función a ejecutar cuando se realiza la petición.
+                                table.row(button.parents("tr")).remove().draw(); // Selecciona el elemento padre del botón y lo elimina del DOM y de memoria.
+                            }
+                        });
+                    };
+                }
+                bootbox.confirm("Are you sure you want to delete this movie?", delete_resource); // Pasa como parámetro la función a ejecutar cuando se seleccione la opción, el parámetro de la función es boolean.
+            });
+        });
+    </script>
 }
 
 

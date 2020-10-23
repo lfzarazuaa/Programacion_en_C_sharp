@@ -24,6 +24,7 @@ namespace Vidly.Dtos
         [Display(Name = "Membership Type")]
         [Required(ErrorMessage = "Please select the Membership Type Id.")]
         public int MembershipTypeId { get; set; }
+        public MembershipTypeDto MembershipType { get; set; }
 
         public override string ToString()
         {

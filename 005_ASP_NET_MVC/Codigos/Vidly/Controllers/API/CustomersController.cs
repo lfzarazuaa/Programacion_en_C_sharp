@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Data.Entity;
 using System.Web.Http;
 using Vidly.Dtos;
 using Vidly.Models;
@@ -27,7 +28,9 @@ namespace Vidly.Controllers.API
         // Verbo GET: /api/customers
         public IHttpActionResult GetCustomers()
         {
-            var customersDto = db.Customers.ToList().Select(Mapper.Map<Customer, CustomerDto>); // Pasa como delegado el método Map que recibe un objeto de tipo Customer como parámetro.
+            var customersDto = db.Customers
+                .Include(c => c.MembershipType).ToList()
+                .Select(Mapper.Map<Customer, CustomerDto>); // Pasa como delegado el método Map que recibe un objeto de tipo Customer como parámetro.
             return Ok(customersDto);
         }
 

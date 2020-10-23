@@ -25,10 +25,7 @@ namespace Vidly.Controllers
 
         public ActionResult Index()
         {
-            IEnumerable<Customer> customers = db.Customers.Include(c => c.MembershipType);
-            if (customers.Count() == 0)
-                return View();
-            return View(customers);
+           return View();
         }
 
         [Route("Customers/Details/{id}")]
@@ -89,6 +86,7 @@ namespace Vidly.Controllers
             {
                 var updated_customer = db.Customers.FirstOrDefault(c => c.Id.Equals(customer.Id));
                 updated_customer.Name = customer.Name;
+                updated_customer.Birthdate = customer.Birthdate;
                 updated_customer.MembershipTypeId = customer.MembershipTypeId;
                 updated_customer.IsSubscribedToNewsletter = customer.IsSubscribedToNewsletter;
                 //TryUpdateModel(updated_customer, "", new string[] { "Name", "MembershipTypeId", "IsSubscribedToNewsletter" });

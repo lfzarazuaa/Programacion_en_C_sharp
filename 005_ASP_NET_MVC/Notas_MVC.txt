@@ -1331,4 +1331,303 @@ API Con IActionResult
             return Ok("resource deleted");
         }
 
+JQuery como librería del lado del cliente.
+    En el desarrollo web se puede usar JQuery como una opción para desarrollo del lado del cliente y asi administrar el DOM de una manera mas uniforme que solo usando Javascript puro. JQuery representa una solución para este problema pero se debe usar con cuidado para no generar código confuso, desorganizado y complejo. Opciones mas modernas para reemmplazar a JQuery son Angular y React que ofrecen una solución mas organizada para el manejo del DOM.
 
+    Tutorial básico de JQuery: https://www.impressivewebs.com/jquery-tutorial-for-beginners/
+
+    Incluir jquery como biblioteca:
+        <script type="text/javascript" src="https://www.impressivewebs.com/wp-includes/js/comment-reply.min.js?ver=5.3.4"></script>
+    
+    Ejecutando código unobtrusivo cuando el DOM ya se cargó: Para ejecutar código que pueda actualizar el DOM, es conveniente que el DOM inicial ya se haya cargado para asi tener un mejor control de las modificaciones que se harán en la vista sin tener errores de llamdo y que la aplicación sera unobstrusiva, contenido (HTML) separado de la presentación (CSS).
+        $(document).ready(function() {
+        // all jQuery code goes here
+        });
+    Seleccionar elementos usando $(""), el cual es un contenedor tipo j Query.
+        $("div"); // Selecciona todos los elementos div del HTML.
+        $("#myElement"); // Selecciona un elemento con el Id "myElement".
+        $(".myClass"); // Selecciona todos los elementos con la clase "myclass"
+        $("p#myElement"); // Selecciona los elementos párrafo (p) con el ID: "myElement".
+        $("ul li a.navigation"); // Selecciona los elementos enlace (a) con clase "navigation" que esten contendidos dentro de li y ul.
+    Uso de JQuery para selectores CSS.
+        $("p > a"); // Selecciona las etiquetas (a) que son hijos de un párrafo (p).
+        $("input[type=text]"); // Selecciona los elementos input con el tipo "text".
+        $("a:first"); // Selecciona la primera etiqueta en la página.
+        $("p:odd"); // Selecciona todos los párrafos impares.
+        $("li:first-child"); // Selecciona cada elemento de la lista que es el primer hijo de una lista.
+    Selectores personalizados CSS.
+        $(":animated"); // Selecciona los elementos con animación.
+        $(":button"); // Selecciona cualquier elemento tipo boton (inputs o buttons).
+        $(":radio"); // Selecciona radio buttons.
+        $(":checkbox"); // Selecciona checkboxes.
+        $(":checked"); // Selecciona los checkboxes o radio buttons marcados(✅).
+        $(":header"); // Selecciona elementos headers (h1, h2, h3, etc.)
+    - Selectores en JQuery: https://api.jquery.com/category/selectors/
+    - Manipulando y accediendo a los nombres de clases CSS:
+        $("div").addClass("content"); // Añade la clase content a todos los elementos <div>.
+        $("div").removeClass("content"); // Añade la clase content de todos los elementos <div>.
+        $("div").toggleClass("content"); // Intercambia la clase en los elementos div usando la clase content, si la tiene la quita, si no la tiene la agrega.
+    - Verificar si un elemento tiene la clase:
+        if ($("#myElement").hasClass("content")) // Verifica si el elemento con ID myElement tiene la clase content.
+    - Manipulando estílos CSS con jQuery.
+        $("p").css("width", "400px"); // Agrega un width de 400px a todos los elementos p.
+        $("#myElement").css("color", "blue") // Hace que el color del texto sea azul en el elemento #myElement
+        $("ul").css("border", "solid 1px #ccc") // Agrega un borde a todos los elementos ul (Todas las listas).
+        Documentación estílos css: https://api.jquery.com/category/css/
+    - Agregando y eliminando elementos y contenido.
+        let myElementHTML = $("#myElement").html(); // Variable que contiene todo el HTML (incluyendo texto) dentro del elemento con id #myElement.
+        let myElementHTML = $("#myElement").text(); // Variable que contiene todo el HTML (excluyendo texto) dentro del elemento con id #myElement.
+        $("#myElement").html("<p>This is the new content.</p>"); // El contenido dentro del elemento con id myElement será reemplazado por el contido pasado dentro de la función.
+        $("#myElement").text("This is the new content."); // El contenido de texto será reemplazado por el ingresado en el parámetro.
+        $("#myElement").append("<p>This is the new content.</p>"); // Concatena el texto pasado al elemento.
+        ("p").append("<p>This is the new content.</p>"); // Concatena el texto a todos los elementos p.
+        Otros métodos usados son: appendTo(), prepend(), prependTo(), before(), insertBefore(), after(), insertAfter().
+        Documentación de agregar elementos y contenido: https://api.jquery.com/category/manipulation/
+    Trabajando con eventos en jQuery:
+        $("a").click(function() {
+            // Ejecutar código cuando se haga un clic en a.
+        });
+        Algunos eventos ejecutados comunmente son: blur, focus, hover, keydown, load, mousemove, resize, scroll, submit, select.
+        Documentación elementos: https://api.jquery.com/category/events/.
+    Enseñando u ocultando elementos con jQuery.
+        // El primer parámetro nos dice la velocidad del efecto, la velocidad se puede dar en milisegundos.
+        $("#myElement").hide("slow", function() {
+            // Código a ejecutar una vez que el elemento se ocultó.
+        } // Oculta el elemento.
+
+        $("#myElement").show("fast", function() {
+            // Código a ejecutar una vez que el elemento se mostró.
+        } // Muestra el elemento.
+
+        $("#myElement").toggle(1000, function() {
+            // Código a ejecutar una vez que el elemento cambió su estado.
+        } // Muestra el elemento si estaba oculto o lo oculta si se mostraba.
+    - Desvaneciendo elementos.
+        $("#myElement").fadeOut("slow", function() {
+            // Código a ejecutar una vez que el elemento se ocultó.
+        } // Reaparece el elemento.
+
+        $("#myElement").fadeIn("fast", function() {
+            // Código a ejecutar una vez que el elemento se mostró.
+        } // Desvanece al elemento.
+    
+        $("#myElement").fadeTo(2000, 0.4, function() {
+            // Código a ejecutar.
+        } // Reaparece el código parcialmente.
+    - Efectos y animación de secuencias:
+        $("#myElement").slideDown("fast", function() {
+            // Código a ejecutar cuando el efecto terminó.
+        } // Efecto hacía abajo.
+
+        $("#myElement").slideUp("slow", function() {
+            // Código a ejecutar cuando el efecto terminó.
+        } // Efecto hacía arriba.
+
+        $("#myElement").slideToggle(1000, function() {
+            // Código a ejecutar cuando el efecto terminó.
+        } // Efecto intercambiable.
+
+        Documentación de efectos: https://api.jquery.com/category/effects/
+        Documentación de animaciones: https://api.jquery.com/animate/https://api.jquery.com/animate/
+
+JQuery en la vista
+    - Para usar instrucciones de jQuery en la vista se debe usar la instrucción:
+        @section scripts
+        {
+            // Código Javascript.
+        }
+    - En la parte de html se configuran las propiedades identificadores y clases que trabajaran con jQuery.
+        Selector para la clase customers.
+            <table id="customers" class=“table table-striped table-hover” style="width: 100%">
+        Agrega el atributo data-customer-id con el valor del Id para leerlo en JS con jQuery.
+        Agrega la clase js-delete indicando que solo se usará para llamarla en javascript con jQuery.
+            <button data-customer-id="@customer.Id" class="btn-link js-delete">
+                Delete @customer.Name
+            </button>
+    Para dar comportamiento a las clases atributos e identificadores se usa jQuery.
+        @section scripts
+        {
+            <script>
+                $(document).ready(function () {
+                    $("#customers .js-delete").on("click", function () {
+                        var button = $(this); // Obtiene la referencia del boton.
+                        let result = confirm("Are you sure you want to delete this customer?");
+                        if (result) { // Si se eligió eliminar el recurso.
+                            $.ajax({ // Llamado de ajax para obtener el recurso.
+                                url: "/api/customers/" + button.attr("data-customer-id"), // url a consultar.
+                                method: "DELETE", // Verbo http.
+                                success: function () { // Función a ejecutar cuando se realiza la petición.
+                                    button.parents("tr").remove(); // Selecciona el elemento padre del boton y lo elimina.
+                                }
+                            });
+                        };
+                    });
+                });
+            </script>    
+        }
+Usar Bootbox.js como elemento para bootstrap.
+    Para poder integrar modales de una forma fácil se puede usar bootbox para js.
+    En la consola nuget se ingresa: install-package bootbox -version:4.3.0 .
+    Al instalarlo agrega bootbox a la carpeta Scripts, por lo cual se puede agregar el archivo js a un bundle para que se llame y lo minifique a la vez.
+         bundles.Add(new ScriptBundle("~/bundles/bootstrap").Include(
+                      "~/Scripts/bootstrap.js",
+                       "~/Scripts/bootbox.js"));
+    Llamar al modal de bootbox.
+        $("#customers .js-delete").on("click", function () {
+            var button = $(this); // Obtiene la referencia del boton.
+            let delete_resource = function (result) {
+                if (result) { // Si se eligió eliminar el recurso.
+                    $.ajax({ // Llamado de ajax para obtener el recurso.
+                        url: "/api/customers/" + button.attr("data-customer-id"), // url a consultar.
+                        method: "DELETE", // Verbo http.
+                        success: function () { // Función a ejecutar cuando se realiza la petición.
+                            button.parents("tr").remove(); // Selecciona el elemento padre del boton y lo elimina.
+                        }
+                    });
+                };
+            }
+            bootbox.confirm("Are you sure you want to delete this customer?", delete_resource); // Pasa como parámetro la función a ejecutar cuando se seleccione la opción, el parámetro de la función es boolean.
+        });
+    - Optimizar código usando un filtro de elementos.
+        $("#customers").on("click",".js-delete", function () {}
+jQuery DataTable
+    - Nos ayuda a realizar la consulta desde código Javascript hacia una API del servidor, obteniendo asi todos los datos en memoria del cliente y ahí poder realizar el filtrado y orden de una manera mas rápida en pantalla.
+    - Instalar datatables (tablas con filtrado, orden y diseño):
+        install-package jquery.datatables -version:1.10.11
+    - Crear bundle con datatables de jquery.
+        bundles.Add(new ScriptBundle("~/bundles/lib").Include(
+                        "~/Scripts/jquery-{version}.js",
+                        "~/Scripts/bootstrap.js",
+                        "~/Scripts/bootbox.js",
+                        "~/Scripts/dataTables/jquery.dataTables.js",
+                        "~/Scripts/dataTables/dataTables.bootstrap.js"
+                        ));
+         bundles.Add(new StyleBundle("~/Content/css").Include(
+                      "~/Content/bootstrap-lumen.css",
+                      "~/Content/bootstrap.css",
+                      "~/Content/datatables/css/dataTables.bootstrap.css",
+                      "~/Content/site.css"));
+        }
+    - Llamar al bundle en el _Layout.cshtml:
+        @Scripts.Render("~/bundles/lib")
+    - Usar datatable en la vista:
+        $("#customers").DataTable(); // Usar dataTable leyendo la tabla customers html.
+    - Usar dataTable con una fuente de Ajax:
+        $("#customers").DataTable({
+            ajax: {
+                url: "/api/customers", // URL del recurso a consultar.
+                dataSrc: "" // Del objeto json consultado elegir el objeto que se requiere.
+            },
+            columns: [
+                {
+                    data: "name",
+                    render: function (data, type, customer) {
+                        return `<a class="btn btn-primary" href="/customers/edit/${customer.id}"> ${customer.name} </a>`;
+                    }
+                },
+                {
+                    data: "name"
+                },
+                {
+                    data: "id",
+                    render: function (data) {
+                        return `<button data-customer-id="${data}" class="btn btn-secondary js-delete"> Delete </button>`;
+                    }
+                }
+            ]
+        });
+    - Definición de tabla sin usar jQuery dataTables:
+        <table id="customersA" class="table table-striped table-hover" style="width: 100%">
+            <thead class="thead-dark">
+                <tr>
+                    <th scope="col">Customer</th>
+                    <th scope="col">Membership Type</th>
+                    <th scope="col">Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var customer in Model)
+                {
+                    <tr class="table-light">
+                        <td> @Html.ActionLink(customer.Name, "Edit", "Customers", new { id = customer.Id }, null)</td>
+                        <td> @customer.MembershipType.Name</td>
+                        <td>
+                            <button data-customer-id="@customer.Id" class="btn btn-secondary js-delete">
+                                Delete @customer.Name
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    - Definicion de tabla usando jQuery dataTables:
+        <table id="customers" class="table table-striped table-hover" style="width: 100%">
+            <thead class="thead-dark">
+                <tr>
+                    <th scope="col">Customer</th>
+                    <th scope="col">Membership Type</th>
+                    <th scope="col">Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+Agregar campo de otra tabla con javascript.
+    - En el campo de get Customers obtener MembershipType:
+        // Verbo GET: /api/customers
+        public IHttpActionResult GetCustomers()
+        {
+            var customersDto = db.Customers
+                .Include(c => c.MembershipType).ToList()
+                .Select(Mapper.Map<Customer, CustomerDto>); // Pasa como delegado el método Map que recibe un objeto de tipo Customer como parámetro.
+            return Ok(customersDto);
+        }
+    - En la clase CustomersDto definir el parámetro MembershipType de tipo MembershipTypeDto.
+        public class CustomerDto
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+            
+            ...
+            
+            public MembershipTypeDto MembershipType { get; set; }
+        }
+    - Ya que se agrego un nuevo párametro con el nombre MembershipType, automapper intentará convertir del tipo MembershipType a MembershipTypeDto, por lo cual es necesario declarar la conversión en MappingProfile.
+        Mapper.CreateMap<MembershipType, MembershipTypeDto>(); // Asignar valores de MembershipType a MembershipTypeDto. 
+        Mapper.CreateMap<MembershipTypeDto, MembershipType>(); // Asignar valores de MembershipTypeDto a MembershipType. 
+    - En Javascript se debe agregar el atributo:
+        var table = $("#customers").DataTable({
+            ajax: {
+                url: "/api/customers", // URL del recurso a consultar.
+                dataSrc: "" // Del objeto json consultado elegir el objeto que se requiere.
+            },
+            columns: [
+                {
+                    data: "name", // Nombre del atributo a consultar.
+                    render: function (data, type, customer) { // Contenido a desplegar por columna.
+                        return `<a class="btn btn-primary" href="/customers/edit/${customer.id}"> ${customer.name} </a>`;
+                    }
+                },
+                {
+                    data: "membershipType", // Nombre del atributo a consultar.
+                    render: function (data) { // Contenido a desplegar por columna.
+                        return `${data.name}`;
+                    }
+                },
+                {
+                    data: "id", // Nombre del atributo a consultar.
+                    render: function (data) { // Contenido a desplegar por columna.
+                        return `<button data-customer-id="${data}" class="btn btn-secondary js-delete"> Delete </button>`;
+                    }
+                }
+            ]});
+    - Eliminar los datos de memoria:
+        table.row(button.parents("tr")).remove().draw();
+Single Page Aplication
+    - Se genera la vista en el cliente y se consulta la API en el servidor, haciendo una respuesta mas rapida en la página pues solo se traen los datos necesarios y todo lo demás se procesa en el cliente.
+    - Se eliminan las vistas razor pues ya no se envía toda la vista generada desde el servidor sino el código JS para procesar la vista.
+    - Los beneficios son interaciones mas rápidas y suaves, pues se procesa desde el cliente sin tener que enviar muchos datos desde el servidor.
+    - Algunos frameworks SPA son:
+        - Angular.
+        - Backbone.js.
+        - Ember.

@@ -230,15 +230,30 @@
     <Compile Include="Migrations\202010151733069_CreateMoviesTable.Designer.cs">
       <DependentUpon>202010151733069_CreateMoviesTable.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\202010292043420_SeedUsers.cs" />
+    <Compile Include="Migrations\202010292043420_SeedUsers.Designer.cs">
+      <DependentUpon>202010292043420_SeedUsers.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202010292319533_AddDrivingLicenseToApplicationUser.cs" />
+    <Compile Include="Migrations\202010292319533_AddDrivingLicenseToApplicationUser.Designer.cs">
+      <DependentUpon>202010292319533_AddDrivingLicenseToApplicationUser.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202010301838519_AddPhoneNumber.cs" />
+    <Compile Include="Migrations\202010301838519_AddPhoneNumber.Designer.cs">
+      <DependentUpon>202010301838519_AddPhoneNumber.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\AccountViewModels.cs" />
     <Compile Include="Models\Customer.cs" />
+    <Compile Include="Models\IdentityModels\ApplicationDbContext.cs" />
+    <Compile Include="Models\IdentityModels\ApplicationUser.cs" />
+    <Compile Include="ViewModels\Account\ExternalLoginConfirmationViewModel.cs" />
     <Compile Include="Models\Genre.cs" />
-    <Compile Include="Models\IdentityModels.cs" />
     <Compile Include="Models\ManageViewModels.cs" />
     <Compile Include="Models\MembershipType.cs" />
     <Compile Include="Models\Min18YearsIfAMember.cs" />
     <Compile Include="Models\Movie.cs" />
+    <Compile Include="Models\RoleName.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="ViewModels\CustomerFormViewModel.cs" />
@@ -483,9 +498,10 @@
     <Content Include="Views\Customers\Index.cshtml" />
     <Content Include="Views\Customers\CustomerDetails.cshtml" />
     <Content Include="Views\Movies\MovieDetails.cshtml" />
-    <Content Include="Views\Movies\Index.cshtml" />
+    <Content Include="Views\Movies\List.cshtml" />
     <Content Include="Views\Customers\CustomerForm.cshtml" />
     <Content Include="Views\Movies\MovieForm.cshtml" />
+    <Content Include="Views\Movies\ReadOnlyList.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
@@ -530,6 +546,15 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\202010151733069_CreateMoviesTable.resx">
       <DependentUpon>202010151733069_CreateMoviesTable.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202010292043420_SeedUsers.resx">
+      <DependentUpon>202010292043420_SeedUsers.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202010292319533_AddDrivingLicenseToApplicationUser.resx">
+      <DependentUpon>202010292319533_AddDrivingLicenseToApplicationUser.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202010301838519_AddPhoneNumber.resx">
+      <DependentUpon>202010301838519_AddPhoneNumber.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <PropertyGroup>

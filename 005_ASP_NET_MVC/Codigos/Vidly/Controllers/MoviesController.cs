@@ -5,6 +5,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using Vidly.Models;
+using Vidly.Models.IdentityModels;
 using Vidly.ViewModels;
 
 namespace Vidly.Controllers
@@ -26,9 +27,13 @@ namespace Vidly.Controllers
         public ActionResult Index()
         {
             IEnumerable<Movie> movies = db.Movies.Include(m => m.Genre);
+            string viewName = "ReadOnlyList";
+            if (User.IsInRole(RoleName.CanManageMovies))
+                viewName = "List";
+
             if (movies.Count() != 0)
-                return View(movies);
-            return View();
+                return View(viewName, movies);
+            return View(viewName);
         }
 
 
@@ -41,6 +46,7 @@ namespace Vidly.Controllers
             return HttpNotFound();
         }
 
+        [Authorize(Roles = RoleName.CanManageMovies)]
         [Route("Movies/Add")]
         public ActionResult AddMovie()
         {
@@ -52,6 +58,7 @@ namespace Vidly.Controllers
         }
 
         [Route("Movies/Edit/{id}")]
+        [Authorize(Roles = RoleName.CanManageMovies)]
         public ActionResult EditMovies(int id)
         {
             var customer = db.Movies.FirstOrDefault(m => m.Id.Equals(id));
@@ -65,7 +72,9 @@ namespace Vidly.Controllers
             return View("MovieForm", viewModel);
         }
 
+
         [HttpPost]
+        [Authorize(Roles = RoleName.CanManageMovies)]
         public ActionResult SaveMovie(Movie movie)
         {
             movie.DateAdded = DateTime.Now;

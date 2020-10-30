@@ -1631,3 +1631,257 @@ Single Page Aplication
         - Angular.
         - Backbone.js.
         - Ember.
+Autorización y Autenticación.
+    - Se usa para restingir el acceso a ciertas vistas o partes del sitio qeb que solo puede acceder un usuario en específico.
+    - Tipos de Autorización en MVC:
+        - Sin autenticación: 
+        - Individual User Accounts: Para proveer un formulario para que el usuario se pueda registrar.
+        - Organizational Accounts: Para activar un registro para aplicaciones internas o en la nube, usando el directorio activo.
+        - Windows Authentication: Para registro en aplicaciones de intranet.
+    - Para acceder al login se configura el proyecto como Individual User Accounts y se accede a traves de la vista parcial generada Login Partial:
+        @using Microsoft.AspNet.Identity
+        @if (Request.IsAuthenticated)
+        {
+            using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm", @class = "navbar-right" }))
+            {
+            @Html.AntiForgeryToken()
+
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    @Html.ActionLink("Hola " + User.Identity.GetUserName() + "!", "Index", "Manage", routeValues: null, htmlAttributes: new { title = "Manage" })
+                </li>
+                <li><a href="javascript:document.getElementById('logoutForm').submit()">Cerrar sesión</a></li>
+            </ul>
+            }
+        }
+        else
+        {
+            <ul class="nav navbar-nav navbar-right">
+                <li>@Html.ActionLink("Register", "Register", "Account", routeValues: null, htmlAttributes: new { id = "registerLink" })</li>
+                <li>@Html.ActionLink("Log in", "Login", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+            </ul>
+        }
+    - ASP.NET Identity ha pasado por diferentes versiones o nombres:
+        ASP.NET Membership.
+        Simple Membership.
+        Universal Providers.
+        ASP.NET Identity.
+    - Arquitectura base de ASP.NET Identity
+        - Se compone de 2 clases de Dominio las cuales son: IdentityUser, Role.
+        - Tiene programada una API para trabajar con cada una de estas clases de dominio:
+            - User Manager.
+            - Role Manager.
+            - SignInManager.
+        - Cada una de las clases hacen referencia a la base de datos por clases UserStore y RoleStore.
+    - El modelo conforme se crea la base de datos está en IdentityModels, la cual tiene 2 clases:
+        ApplicationUser: Deriva de IdentityUser y define la contrucción de los modelos en el contexto.
+        ApplicationDbContext: Deriva de IdentityDbContext la cual es una clase genérica donde se le pasan por parámetro los modelos contenidos dentro de ApplicationUser.
+    - El controlador AccountController es el encargado de exponer distintas acciones como registro, entrar, cerrar sesión entre otras.
+        - En particular la acción Register para Post realiza el registro de un nuevo usuario asíncronamente.
+Authorize
+    - Para impedir el acceso a un método o controlador si no se está registrado se usa [Authorize] con lo cual si no se está registrado se redirigue a la página de registro e iniciar sesión.
+    - Authorize en método:
+        [Authorize]
+        public ActionResult Index()
+        {
+           return View();
+        }
+    - Authorize en clase:
+        [Authorize]
+        public class CustomersController : Controller
+        {
+        }
+    - Authorize global para la aplicación (FilterConfig.cs).
+        public class FilterConfig
+        {
+            public static void RegisterGlobalFilters(GlobalFilterCollection filters)
+            {
+                filters.Add(new HandleErrorAttribute());
+                filters.Add(new AuthorizeAttribute());
+            }
+        }
+Sembrando Usuarios y Roles
+    Para añadir un rol a un usuario, primero se debe crear el rol o asignarlo en la base de datos, para eso se puede modificar el registro para asignar el rol a un nuevo usuario.
+        public async Task<ActionResult> Register(RegisterViewModel model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+                var result = await UserManager.CreateAsync(user, model.Password);
+                if (result.Succeeded)
+                {
+                    //Añadir rol con usuario.
+                    var roleStore = new RoleStore<IdentityRole>(new ApplicationDbContext()); // Se dice el tipo de rol (IdentityRole).
+                    var roleManager = new RoleManager<IdentityRole>(roleStore); // Crea contenedor de RoleStore para validar cada rol.
+                    await roleManager.CreateAsync(new IdentityRole("CanManageMovies")); // Crea el rol CanManageMovies.
+                    await UserManager.AddToRoleAsync(user.Id, "CanManageMovies"); // Asigna al usuario el Rol recíen creado.
+
+                    await SignInManager.SignInAsync(user, isPersistent:false, rememberBrowser:false);
+                    
+                    // Para obtener más información sobre cómo habilitar la confirmación de cuentas y el restablecimiento de contraseña, visite https://go.microsoft.com/fwlink/?LinkID=320771
+                    // Enviar correo electrónico con este vínculo
+                    // string code = await UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
+                    // var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);
+                    // await UserManager.SendEmailAsync(user.Id, "Confirmar cuenta", "Para confirmar la cuenta, haga clic <a href=\"" + callbackUrl + "\">aquí</a>");
+
+                    return RedirectToAction("Index", "Home");
+                }
+                AddErrors(result);
+            }
+
+            // Si llegamos a este punto, es que se ha producido un error y volvemos a mostrar el formulario
+            return View(model);
+        }
+    - Los nombres que se le asignen a los roles deben describir sus funciones en el sistema como CanManageMovies, luego se les podra asignar una variable estática para distinguirlas conforme a la aplicación.
+    - Para sembrar datos se crea una nueva migración y con el comando Sql y el comando Insert se añaden los nuevos registros, para aplicar esta técnica se crean los scripts de llos datos originales , luego estos se borran de la base de datos y se añaden con la migracion.
+        public override void Up()
+        {
+            Sql(@"
+                INSERT INTO[dbo].[AspNetUsers]([Id], [Email], [EmailConfirmed], [PasswordHash], [SecurityStamp], [PhoneNumber], [PhoneNumberConfirmed], [TwoFactorEnabled], [LockoutEndDateUtc], [LockoutEnabled], [AccessFailedCount], [UserName]) VALUES(N'18ac6234-c2c8-47d3-b9a3-1c5978394efb', N'admin@user.com', 0, N'AJSOAFbS4QFrYcti2KUTtBdtQ6nKfiSLrmxfU64hgBVWx/DsKfx1i2T+E5Ic6fds+A==', N'871c3211-6acc-49f9-85c0-282f4b887a3a', NULL, 0, 0, NULL, 1, 0, N'admin@user.com');
+                INSERT INTO[dbo].[AspNetUsers] ([Id], [Email], [EmailConfirmed], [PasswordHash], [SecurityStamp], [PhoneNumber], [PhoneNumberConfirmed], [TwoFactorEnabled], [LockoutEndDateUtc], [LockoutEnabled], [AccessFailedCount], [UserName]) VALUES(N'42f48dd2-7f9d-473a-82e1-e43468a9c523', N'correo1@microsoft.com', 0, N'AHmmNecEgHCXRyDfTopwIaTlxaB6l3ELoKOK8HWC3k+74ZqmHAzpfBPYSMcjoB0OYQ==', N'1be26e67-bc3f-49f6-aae8-78d708166937', NULL, 0, 0, NULL, 1, 0, N'correo1@microsoft.com');
+                INSERT INTO[dbo].[AspNetUsers] ([Id], [Email], [EmailConfirmed], [PasswordHash], [SecurityStamp], [PhoneNumber], [PhoneNumberConfirmed], [TwoFactorEnabled], [LockoutEndDateUtc], [LockoutEnabled], [AccessFailedCount], [UserName]) VALUES(N'f0749fdb-a9c3-4825-99bd-400a6756c962', N'guest@user.com', 0, N'AMNCmOCHppAPKfjj+RZQ8NHzUPhwu8Yjj8JQfA2HDbiJtfYocFCwt3aF5BEjJ0zlig==', N'ade614d9-8f92-4fc0-b85f-8df4f0fcd45c', NULL, 0, 0, NULL, 1, 0, N'guest@user.com');
+                
+                INSERT INTO [dbo].[AspNetRoles] ([Id], [Name]) VALUES (N'68604c2f-5da1-4eb3-8cda-6e14bfe10f30', N'CanManageMovies');
+
+                INSERT INTO [dbo].[AspNetUserRoles] ([UserId], [RoleId]) VALUES (N'18ac6234-c2c8-47d3-b9a3-1c5978394efb', N'68604c2f-5da1-4eb3-8cda-6e14bfe10f30');
+            ");
+        }
+
+Restringir acceso por roles.
+    - Se pueden tomar 2 caminos para restringir el acceso por roles:
+        - Tener una vista que se ajuste según el rol asignado.
+        - Crear una vista para cada tipo de rol.
+    - Elegir la vista usando el Rol actual (User.IsInRole(RoleName.CanManageMovies).
+        public ActionResult Index()
+        {
+            IEnumerable<Movie> movies = db.Movies.Include(m => m.Genre);
+            string viewName = "ReadOnlyList";
+            if (User.IsInRole(RoleName.CanManageMovies))
+                viewName = "List";
+
+            if (movies.Count() != 0)
+                return View(viewName, movies);
+            return View(viewName);
+        }
+    - Restringir el acceso por tipo de Rol.
+        [Authorize(Roles = RoleName.CanManageMovies)]
+        [Route("Movies/Add")]
+        public ActionResult AddMovie()
+        {
+            var viewModel = new MovieFormViewModel
+            {
+                Genres = db.Genres.ToList()
+            };
+            return View("MovieForm", viewModel);
+        }
+    - Declarar una clase estática con una constante para evitar magic strings.
+        public static class RoleName
+        {
+            public const string CanManageMovies = "CanManageMovies";
+        }
+Agregar nuevo campo al usuario
+    - En el archvio IdentityModels se modifica la clase ApplicationUser:
+        // Para agregar datos de perfil del usuario, agregue más propiedades a su clase ApplicationUser. Visite https://go.microsoft.com/fwlink/?LinkID=317594 para obtener más información.
+        public class ApplicationUser : IdentityUser
+        {
+            [Required]
+            [StringLength(255)]
+            public string DrivingLicense { get; set; }
+
+            public async Task<ClaimsIdentity> GenerateUserIdentityAsync(UserManager<ApplicationUser> manager)
+            {
+                // Tenga en cuenta que el valor de authenticationType debe coincidir con el definido en CookieAuthenticationOptions.AuthenticationType
+                var userIdentity = await manager.CreateIdentityAsync(this, DefaultAuthenticationTypes.ApplicationCookie);
+                // Agregar aquí notificaciones personalizadas de usuario
+                return userIdentity;
+            }
+        }
+    - Cuando se agrega un campo como Required Entity Framework agrega el campo con string en blanco o el valor default del dato.
+    - Una vez agregado el modelo se modifica la vista (Register):
+        <div class="form-group">
+            @Html.LabelFor(m => m.DrivingLicense, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.DrivingLicense, new { @class = "form-control" })
+            </div>
+        </div>
+    - Se modifica el modelo de la vista (Vidly.Models.RegisterViewModel):
+        public class RegisterViewModel
+        {
+            [Required]
+            [EmailAddress]
+            [Display(Name = "Email")]
+            public string Email { get; set; }
+
+            [Required]
+            [StringLength(100, ErrorMessage = "El número de caracteres de {0} debe ser al menos {2}.", MinimumLength = 6)]
+            [DataType(DataType.Password)]
+            [Display(Name = "Password")]
+            public string Password { get; set; }
+
+            [DataType(DataType.Password)]
+            [Display(Name = "Repeat Password")]
+            [Compare("Password", ErrorMessage = "La contraseña y la contraseña de confirmación no coinciden.")]
+            public string ConfirmPassword { get; set; }
+
+            [Required]
+            [Display(Name = "Driving License")]
+            public string DrivingLicense { get; set; }
+        }
+    - Se modifica el controlador:
+            var user = new ApplicationUser
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    DrivingLicense = model.DrivingLicense
+                };
+Oauth
+    Protocolo de autenticación usado por varias plataformas.
+    Significa Open Authorisation
+    Se crea una cuenta en la red social o proveedor a usar.
+    La API de la red social publica una llave secreta para ese usuario.
+    La aplicación genera una llave para autenticarse con la red social y junto con los datos del usuario se accede a la api, para registralo y pedirle cierta información del usuario.
+    El usuario concede los permisos en la red social.
+    La red social regresa un token de autorización.
+    La aplicación responde con un token a la red social para confirma que la red social en verdad mando la información.
+    La red social regresa un token de acceso con el cual se pueden consultar ciertas partes del perfil de la red social del usuario.
+    ASP.NET tiene funciones que se encargan de realizar todo el procedimiento de una manera mas fácil de desarrollar.
+Usando redes sociales en ASP.NET
+    - Habilitar SSL(para comunicaciones seguras).
+    - Registrar la app en la red social.
+    - Colocar la url del sitio con ssl.
+    - En AppStart/Startupu.Auth habilitamos la sección de facebook con la parte que nos pide.
+
+    - En el formulario de registro Views/Account/ExternalLoginConfirmation añadimos los campos necesarios definidos en el modelo de usuario.
+        // Modelo
+        public class ExternalLoginConfirmationViewModel
+        {
+            [Required]
+            [Display(Name = "Correo electrónico")]
+            public string Email { get; set; }
+
+            [Required]
+            [StringLength(255)]
+            [Display(Name = "Driving License")]
+            public string DrivingLicense { get; set; }
+        }
+
+        // Vista
+        <div class="form-group">
+            @Html.LabelFor(m => m.DrivingLicense, new { @class = "col-md-2 control-label" })
+            <div class="col-md-10">
+                @Html.TextBoxFor(m => m.DrivingLicense, new { @class = "form-control" })
+                @Html.ValidationMessageFor(m => m.DrivingLicense, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        //Controlador
+        var user = new ApplicationUser
+        {
+            UserName = model.Email,
+            Email = model.Email,
+            DrivingLicense = model.DrivingLicense
+        };
+    - En la tabla AspNetUserLogins se guardan los registros de las cuentas registradas externas.
+        app.UseFacebookAuthentication(
+               appId: "374991787270999",
+               appSecret: "numerosecreto");

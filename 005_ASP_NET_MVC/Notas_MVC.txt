@@ -1885,3 +1885,96 @@ Usando redes sociales en ASP.NET
         app.UseFacebookAuthentication(
                appId: "374991787270999",
                appSecret: "numerosecreto");
+
+Niveles de Optimización
+    - Una consideración muy importante a recordar es: "La optimización prematura es la raíz de todos los males".
+    - Para hacer una optimización no se puede generalizar sino que se debe ver el problema en particular y optimizarlo segun sus necesidades.
+    - En las aplicaciones web se tienen 3 niveles de optimización:
+        - Cliente: Navegador Web.
+        - Aplicacción: Servidor de aplicación IIS.
+        - Datos: Base de datos usada.
+    - Las principales optimizaciones se hacen en la capa de Datos y por lo general las menos observables en la del cliente.
+Optimización en la capa de datos:
+    - Problemas en la base de datos al no establecer:
+        - Llaves primarias.
+        - Relaciones.
+        - Indices.
+    - Al usar Entity Framework se evita ese problema pues se definen siempre las relaciones llaves primarias e índices.
+    - Cuando una consulta generada por EF es muy compleja es mejor crear un procedimiento almacenado y optimizar asi, aunque se salga del patrón.
+    - Optimizar consultas:
+        - Usar Execution Plan en SQL Server, que nos muestra como SQL ejecuta nuestra consulta, con esto se puede determinar que parte de la consulta es la mas tardada y si se puede quitar entonces se elimina de la consulta.
+        - Crear una base de datos de solo lectura para los registros (CQRS), como lecturas por dias o por mes de algún campo, se usan haciendo join de datos para no gastar tiempo haciendo el join despues.
+        - Usar la cache para guardar los registros en memoria.
+    - Glimpse para ver tiempos de la aplicación.
+        - Instalar:
+            install-package glimpse.ef6
+            install-package glimpse.mvc5
+        - Ejecutar:
+            https://localhost:44335/glimpse.axd
+            Activar glimpse
+        - Dentro de Glimpse hay 3 opciones diferentes estas opciones nos permiten inspeccionar distintos aspectos de la aplicación y como se ejecuta esta.
+Optimización para la capa de la aplicación
+    - Una técnica para mejorar el rendimiento del lado del servidor es usar release builds.
+        - Produce ensamblados ligeramente mejores optimizados para la etapa de producción quitando herramientas de desarrollo para trazabilidad y debugging.
+    - Deshabilitar la sesión:
+        - Una sesión es una parte de memoria en el servidor para alojar información temporal de cada usuario.
+        - Si un sevidor tiene muchos usuarios entonces la memoria se saturará muy rapido.
+        - Actualmente se usan soluciones mas orientadas a la nube, haciendo una petición al servidor y siendo está respondida sin guardar estados temporales de cada usuario.
+        En Web.config se añade en dentro de la etiqueta <system.web>:
+         <sessionState mode="Off"></sessionState>
+    - Otra técnica para mejorar el rendimiento del lado del servidor es output caching.
+        - Output Caching consiste en que la aplicación consulta la base de datos una vez para obtener los datos, luego guarda esos datos (las vistas o controladores) en la memoria cache del servidor y empieza a consultar de esa fuente hasta que pase un determinado tiempo o evento.
+        - Se declara con [OutputCache] y al igual que [Authorize] es un action filter.
+            [OutputCache]
+            public ActionResult Index()
+            {
+                return View();
+            }
+        - OutputCache se puede también aplicar a todo un controlar, ya sea despues de sus ejecución a antes.
+        - Output cache cuenta con varios parámetros como:
+            Duration : Establece cada cuando se lee de nuevo desde la DB.
+            Location : Establece si se va a ejecutar desde el servidor o desde el cliente.
+            VaryByParam : Estable por cual párametro va actualizarse si cambia.
+            [OutputCache(Duration = 10, Location = OutputCacheLocation.Server, VaryByParam = "genre")]
+            public ActionResult Index()
+            {
+                return View();
+            }
+        - Se debe ser cuidadoso con esta implementación pues no mantiene actualizada la página y solo es recomenbable si la página esta siendo lento al cargar.
+        - No se debe agregar cuando se muestran cambios como al agregar o editar un registro de la DB.
+        - Para deshabilitar el uso de cache se debe usar:
+            [OutputCache(Duration = 0, VaryByParam = "*", NoStore = true)]
+            public ActionResult Index()
+            {
+                return View();
+            }
+    - Data Caching Cache en en los datos consultados.
+        public ActionResult Index()
+        {
+           if(MemoryCache.Default["Genres"] == null)
+           {
+               MemoryCache.Default["Genres"] = db.Genres.ToList();
+           }
+           var genres = MemoryCache.Default["Genres"] as IEnumerable<Genre>;
+           return View();
+        }
+        Este método solo es recomendable despues de hacer pruebas de rendimiento y encontrar deficits, en otro caso no es conveniente.
+Async - Await.
+    Una de las ideas que se tiene de async y await es que mejoran el rendimiento de la aplicación haciendo las consultas mas rapidas.
+    Cuando se hace una consulta normal se tiene que esperar un determinado tiempo para que la consulta se ejecute y de esta manera proceder hasta que se tenga la respuesta completa.
+    Con Async-Await se libera el flujo una vez que se hace la consulta, ya con la consulta terminada se realizan las operaciones que necesitaban de esa consulta, sin bloquear el programa.
+    Async Await nos permite tener una aplicación mas responsiva pero no reduce el tiempo por consulta.
+    Al usar async await tenemos una mejor escalabilidad pues podríamos hacer consultas en paralelo dependiendo de la capacidad de hardware disponible, pero no es un mejor rendimiento en las consultas y una vez que se usen todos los recursos ya no se podrá mejorar mas.
+    La escalabilidad puede convertirse en una leyenda pues si no se tiene el hardware disponible con muchas instancias en verdad solo se estará haciendo una consulta a la vez.
+    Una manera de tener verdadera escalabilidad es usar un cluster de SQL, MongoDb o SQL Azure.
+
+Optimización para la capa deL cliente
+    Para optimizar del lado del cliente es recomendable mandar los archivos en su versión mas ligera posible:
+        Para los DTO se recomienda que solo contengan la información que necesitan y no mas siempre y cuando sea pensada como una API de uso interno.
+        En los archivos js se sugiere hacer conjuntos de archivos para que estos se envien en un solo paquete y en su versión comprimida de una sola línea.
+        Cuando se compila el código de c# se hace un proceso para interpretar el código y guardar las instrucciones en el servidor, sin embargo es distinto cuando se corre el proyecto el cual ejecuta lo compilado y luego interpeta el código de JS y CSS en bundles para ser posteriormente enviados.
+        Para usar los bundles en Web.config se coloca dentro de la etiqueta <system.web>:
+            <compilation debug="false" targetFramework="4.8" />
+        Para tener una mejor medida del tiempo que se tarda nuestra aplicación es recomendable quitar el cache que trae por defecto el navegador web, pues en ocasiones no nos refleja los cambios verdaderos o carga mas archivos de los necesarios.
+
+        

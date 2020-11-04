@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using System.Data.Entity;
 using Vidly.Dtos;
 using Vidly.Models;
 using Vidly.Models.IdentityModels;
@@ -26,9 +27,17 @@ namespace Vidly.Controllers.API
         }
 
         // Verbo GET: /api/movies
-        public IHttpActionResult GetMovies()
+        public IHttpActionResult GetMovies(string query = null)
         {
-            var moviesDto = db.Movies.ToList().Select(Mapper.Map<Movie, MovieDto>);
+            var moviesQuery = db.Movies.Include(m => m.Genre)
+                .Where(m => m.NumberAvailable>0);
+
+            if (!String.IsNullOrWhiteSpace(query)) // Filtrado de movies por nombre.
+            {
+                moviesQuery = moviesQuery.Where(m => m.Name.Contains(query));
+            }
+
+            var moviesDto = moviesQuery.ToList().Select(Mapper.Map<Movie, MovieDto>);
             return Ok(moviesDto);
         }
 
@@ -55,10 +64,12 @@ namespace Vidly.Controllers.API
                 return BadRequest($"The genre don't exist.");
 
             var movie = db.Movies.Add(Mapper.Map<MovieDto, Movie>(movieDto));
+            movie.NumberAvailable = movie.NumberInStock;
             movie.DateAdded = DateTime.UtcNow; // Registrar la fecha de añadido.
             db.SaveChanges();
 
             movieDto.Id = movie.Id; // Asignar el Id desde la db.
+            movieDto.NumberAvailable = movie.NumberInStock;
             movieDto.DateAdded = movie.DateAdded;// Regresar la fecha de añadido.
             return Created(new Uri($"{Request.RequestUri}/{movieDto.Id}"), movieDto); // Crear recurso con estado 201 y pasar un objeto como respuesta.
         }

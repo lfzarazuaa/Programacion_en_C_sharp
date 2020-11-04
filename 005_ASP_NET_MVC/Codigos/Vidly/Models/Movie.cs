@@ -31,6 +31,8 @@ namespace Vidly.Models
         [Range( 1 , 20, ErrorMessage = "The Number of movies must be between 1 and 20.")]
         [Display(Name = "Number in Stock")]
         public int NumberInStock { get; set; }
+
+        public int NumberAvailable { get; set; }
     }
 
 }

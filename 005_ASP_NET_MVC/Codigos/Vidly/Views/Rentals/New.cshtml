@@ -1,0 +1,153 @@
+﻿
+@{
+    ViewBag.Title = "New Rental Form";
+}
+
+<h2>@ViewBag.Title</h2>
+
+<form id="newRental">
+    <div class="form-group">
+        <label>Customer</label>
+        <div class="tt-container">
+            <input id="customer" name="customer" data-rule-validCustomer="true" required type="text" value="" class="form-control" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label>Movie</label>
+        <div class="tt-container">
+            <input id="movie" name="myMovie" data-rule-atLeastOneMovie="true" type="text" value="" class="form-control" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 col-sm-6">
+            <ul id="movies" class="list-group"></ul>
+        </div>
+    </div>
+
+    <button class="btn btn-primary">Submit</button>
+</form>
+
+@section scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+
+            var viewModel = {
+                movieIds: []
+            }; // Inicializa viewmodel en blanco.
+
+            // Bloodhound encapsula toda la lógica de negocio, llama a la api y pone en cache los resultados.
+            var customers = new Bloodhound({
+                // Convierte el dato a una pila de tokens,
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'), // Ve la propiedad name de customer y usa espacios en blanco para generar los token.
+                queryTokenizer: Bloodhound.tokenizers.whitespace, // Transforma la query en una pila de tokens.
+                // Previene de hacer solicitudes adicionales al servidor.
+                // prefetch: '../data/films/post_1960.json', // Proporcionar datos sobre la optimización
+                remote: {
+                    url: '../api/customers?query=%QUERY', // %QUERY es lo que se pondrá en el text box.
+                    wildcard: '%QUERY'
+                }
+            });
+
+            // Elemento que se va a modificar.
+            $('#customer').typeahead(
+                // Primer argumento para establecer el comportamiento de typeahead.
+                {
+                    minLength: 3, // Hasta tener 3 elementos typeahead realizará la consulta.
+                    highlight: true // Los carácteres que coincidan con la búsqueda serán resaltados en negritas.
+                },
+                {
+                    name: 'customers', // Nombre de la propiedad.
+                    display: 'name', // Propiedad a mostrar de la consulta.
+                    source: customers // Fuente de datos (nombre del objeto Bloohound).
+                }
+            ) // Método jquery on.
+                .on("typeahead:select", function (e, customer) { // Evento y customer
+                    viewModel.customerId = customer.id;
+                });
+
+
+            // movie
+            // Bloodhound encapsula toda la lógica de negocio, llama a la api y pone en cache los resultados.
+            var movies = new Bloodhound({
+                // Convierte el dato a una pila de tokens,
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'), // Ve la propiedad name de movie (objeto regreado de la consulta) y usa espacios en blanco para generar los token.
+                queryTokenizer: Bloodhound.tokenizers.whitespace, // Transforma la query en una pila de tokens.
+                // Previene de hacer solicitudes adicionales al servidor.
+                // prefetch: '../data/films/post_1960.json', // Proporcionar datos sobre la optimización
+                remote: {
+                    url: '../api/movies?query=%QUERY', // %QUERY es lo que se pondrá en el text box.
+                    wildcard: '%QUERY'
+                }
+            });
+
+            // Elemento que se va a modificar.
+            $('#movie').typeahead(
+                // Primer argumento para establecer el comportamiento de typeahead.
+                {
+                    minLength: 1, // Hasta tener 1 elemento typeahead realizará la consulta.
+                    highlight: true // Los carácteres que coincidan con la búsqueda serán resaltados en negritas.
+                },
+                {
+                    name: 'myMovie', // Nombre de la propiedad.
+                    display: 'name', // Propiedad a mostrar de la consulta.
+                    source: movies // Fuente de datos (nombre del objeto Bloohound).
+                }
+            ) // Método jquery on.
+                .on("typeahead:select", function (e, myMovie) { // Evento y mymovies
+                    $("#movies").append("<li class = 'list-group-item'>" + myMovie.name + "</li>"); // Agrega el elemento visualmente.
+
+                    // Limpiar textbox después de la selección.
+                    $("#movie").typeahead("val", "");
+
+                    viewModel.movieIds.push(myMovie.id)
+                });
+
+            $.validator.addMethod("validCustomer", // Nombre de la validación.
+                function () { // Función para validar.
+                return viewModel.customerId && viewModel.customerId !== 0; // Condición de validación.
+            },
+                "Please select a valid customer." // Mensaje de error.
+            );
+
+            $.validator.addMethod("atLeastOneMovie", // Nombre de la validación.
+                function () { // Función para validar.
+                    return viewModel.movieIds.length > 0; // Condición de validación.
+                },
+                "Please select at least one movie." // Mensaje de error.
+            );
+
+            var validator = $("#newRental").validate({
+                submitHandler: function () { // Función a ejecutar si pasó la validación. 
+
+                    $.ajax({
+                        url: "/api/newRentals",
+                        method: "post",
+                        data: viewModel
+                    })
+                        .done(function () {
+                            toastr.success("Rentals successfully recorded.");
+                            // Limpiar cajas de texto y lista de películas.
+                            $("#customer").typeahead("val", "");
+                            $("#movie").typeahead("val", "");
+                            $("#movies").empty();
+
+                            // Limpiar variable donde se almacena el modelo.
+                            viewModel = { movieIds: [] };
+
+                            validator.resetForm(); // Resetear el formulario en términos de su validación.
+                        })
+                        .fail(function () {
+                            toastr.error("Something unexpected happened.");
+                        });
+
+                   return false // Evita que el formulario se envíe por defecto.
+                }
+            });
+        });
+    </script>
+
+}

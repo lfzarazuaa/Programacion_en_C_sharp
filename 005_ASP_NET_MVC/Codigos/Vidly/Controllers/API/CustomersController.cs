@@ -27,10 +27,17 @@ namespace Vidly.Controllers.API
         }
 
         // Verbo GET: /api/customers
-        public IHttpActionResult GetCustomers()
+        public IHttpActionResult GetCustomers(string query = null)
         {
-            var customersDto = db.Customers
-                .Include(c => c.MembershipType).ToList()
+            var customersQuery = db.Customers
+                .Include(c => c.MembershipType);
+
+            if (!String.IsNullOrWhiteSpace(query)) // Filtrado de customers por nombre.
+            {
+                customersQuery = customersQuery.Where(c => c.Name.Contains(query));
+            }
+
+            var customersDto = customersQuery.ToList()
                 .Select(Mapper.Map<Customer, CustomerDto>); // Pasa como delegado el método Map que recibe un objeto de tipo Customer como parámetro.
             return Ok(customersDto);
         }

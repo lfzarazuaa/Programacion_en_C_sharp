@@ -1977,4 +1977,651 @@ Optimización para la capa deL cliente
             <compilation debug="false" targetFramework="4.8" />
         Para tener una mejor medida del tiempo que se tarda nuestra aplicación es recomendable quitar el cache que trae por defecto el navegador web, pues en ocasiones no nos refleja los cambios verdaderos o carga mas archivos de los necesarios.
 
-        
+Implementación de una nueva característica
+    - Para implementar una nueva caracterísitca se puede comenzar desde:
+        - Frontend
+        - Backend
+    - Una mejor solución es comenzar desde el backend teniendo en cuanta lo que se hará en el frontend para asi no complicar el desarrollo.
+    - Hay que identficar las entradas y salidas.
+        - Entradas: Clientes y Películas.
+        - Salidas: 
+        - Caso de uso: New Rental.
+    - En el frontend necesitamos una acción del backend para llamar, esto se puede consultar desde:
+        - Controlador MVC (Regresa el código y html).
+        - Controlador de la API (Genera html conforme a la información).
+    - Siguiendo el paso de la creación de API es bueno comenzar por crear el método que almacenará en la db con lo que se espera de entradas.
+        - Creación de API.
+            public class NewRentalsController : ApiController
+            {
+                [HttpPost]
+                public IHttpActionResult CreateNewRentals(NewRentalDto newRental)
+                {
+                    throw new NotImplementedException;
+                }
+            }
+        - Creación de DTO como parámetro de entrada de la API.
+            public class NewRentalDto
+            {
+                public int CustomerId { get; set; }
+                public List<int> MovieIds { get; set; }
+            }
+    - Para que la API guarde en la base de datos necesita una tabla que soporte la acción, en este caso un comprador y varias películas, y la tabla Rental es por la tanto es una tabla de asociación.
+        public class Rental
+        {
+            public int Id { get; set; }
+
+            [Required]
+            public int CustomerId { get; set; }
+            public Customer Customer { get; set; }
+
+            [Required]
+            public int MovieId { get; set; }
+            public Movie Movie { get; set; }
+
+            [Required]
+            public DateTime DateRented { get; set; }
+
+            public DateTime? DateReturned { get; set; }
+        }
+    - Añadir en datacontext y añadir la migración.
+        public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+        {
+            public DbSet<Customer> Customers { get; set; }
+            public DbSet<MembershipType> MembershipTypes { get; set; }
+            public DbSet<Genre> Genres { get; set; }
+            public DbSet<Movie> Movies { get; set; }
+            public DbSet<Rental> Rentals { get; set; }
+        }
+
+        add-migration AddRentalModel
+        update-database
+    - Un consejo para seguir avanzado en seguir el happy path donde se considera que todo dato ingresado sera valido y no habran problemas, posteriormente se dan las validaciones casos de frontera y demas lógica necesaria, esto para tener el soporte y que no sea todo un caos.
+    - Posteriormente se prosigue a asignarle la definición a la acción de nuevo sin pensar en casos de frontera o validaciones, lo mas simple posible que pueda agregar registros a la db.
+        [HttpPost]
+        public IHttpActionResult CreateNewRentals(NewRentalDto newRental)
+        {
+            var todayDate = DateTime.Now; // Obtiene la fecha actual.
+            
+            var customer = db.Customers.Single( // Leer el comprador.
+                c => c.Id == newRental.CustomerId);
+
+            // Cargar varias películas con contains equivalente a IN(1,2,3)
+            var movies = db.Movies.Where(
+                m => newRental.MovieIds.Contains(m.Id));
+
+            // Crear todos los registros.
+            foreach (var movie in movies)
+            {
+                var rental = new Rental
+                {
+                    Customer = customer,
+                    Movie = movie,
+                    DateRented = todayDate
+                };
+                // Guardar en memoria.
+                db.Rentals.Add(rental);
+            }
+            // Guardar en la base de datos.
+            db.SaveChanges();
+
+            return Created(new Uri($"{Request.RequestUri}/"), newRental); // Crear recurso con estado 201 y pasar un objeto como respuesta.
+        }
+    - Ahora falta agregar la disponiblidad de películas y aunque se puede obtener si las películas estan disponibles consultando el número de peículas en stock(movies) menos el número de películas que tiene los clientes(rentals), conforme la tabla rentals crezca será cada vez más lenta la consulta, por lo tanto es recomendable mejor reflejar los cambios en la misma tabla de películas como una propiedad mas.
+    - Cuando el código se vuelve mas simple de escribir y a la vez se ejecuta con menor costo computacional no es una optimización prematura sino que se vuelve un código mas mantenible y mejor optimizado.
+        public class Movie
+        {
+            public int Id { get; set; }
+            
+            ...
+
+            [Required(ErrorMessage = "The Number in Stock field is required.")]
+            [Range( 1 , 20, ErrorMessage = "The Number of movies must be between 1 and 20.")]
+            [Display(Name = "Number in Stock")]
+            public int NumberInStock { get; set; }
+
+            public int NumberAvailable { get; set; }
+        }
+    - Una vez que ya se realizo la implementación siguiendo el happy path, se prosigue a ver cuales son los casos de negocio y validaciones necesarias para que la aplicación sea congruente.
+        Casos de Frontrera.
+            - El Id del cliente es inválido.
+            - No hay MovieIds.
+            - Una o mas MovieIds son inválidas.
+            - Una o mas películas no estan disponible por su número.
+    Los casos de frontera se pueden tomar de dos maneras:
+        Defensiva: Hace todas las comprobaciones sin importar cuales son los casos posibles del frontend. Son importantes si se usa una API pública.
+            [HttpPost]
+            public IHttpActionResult CreateNewRentals(NewRentalDto newRental)
+            {
+                if (newRental.MovieIds.Count == 0)
+                    return BadRequest("No MovieIds have been given.");
+
+                var customer = db.Customers.SingleOrDefault( // Leer el cliente.
+                    c => c.Id == newRental.CustomerId);
+
+                if (customer == null)
+                    return BadRequest("CustomerId is not valid.");
+
+                // Cargar varias películas con contains equivalente a IN(1,2,3)
+                var movies = db.Movies.Where(
+                    m => newRental.MovieIds.Contains(m.Id)).ToList();
+
+                if (movies.Count != newRental.MovieIds.Count)
+                    return BadRequest("One or more MoviesIds are invalid.");
+
+                if (movies.Any(m => m.NumberAvailable <= 0))
+                    return BadRequest("One or more movies are not available.");
+
+                var todayDate = DateTime.Now; // Obtiene la fecha actual.
+
+                // Crear todos los registros.
+                foreach (var movie in movies)
+                {
+                    var rental = new Rental
+                    {
+                        Customer = customer,
+                        Movie = movie,
+                        DateRented = todayDate
+                    };
+                    // Guardar en memoria.
+                    db.Rentals.Add(rental);
+                    movie.NumberAvailable = movie.NumberAvailable - 1;//Decrementar en uno el número de peliculas.
+                }
+                // Guardar en la base de datos.
+                db.SaveChanges();
+
+                return Ok(newRental); // Crear recurso con estado 201.
+            }
+
+        Optimista: Se crea cuando solo la API va ser consumida por una aplicación y no son necesarias mas que validaciones muy específicas.
+            [HttpPost]
+            public IHttpActionResult CreateNewRentals(NewRentalDto newRental)
+            {
+                
+                var customer = db.Customers.SingleOrDefault( // Leer el cliente.
+                    c => c.Id == newRental.CustomerId);
+
+                // Cargar varias películas con contains equivalente a IN(1,2,3)
+                var movies = db.Movies.Where(
+                    m => newRental.MovieIds.Contains(m.Id)).ToList();
+
+                if (movies.Any(m => m.NumberAvailable <= 0))
+                    return BadRequest("One or more movies are not available.");
+
+                var todayDate = DateTime.Now; // Obtiene la fecha actual.
+            
+                // Crear todos los registros.
+                foreach (var movie in movies)
+                {
+                    var isvalid = ModelState.IsValid;
+                    var rental = new Rental
+                    {
+                        Customer = customer,
+                        Movie = movie,
+                        DateRented = todayDate
+                    };
+                    // Guardar en memoria.
+                    db.Rentals.Add(rental);
+                    movie.NumberAvailable = movie.NumberAvailable -1;//Decrementar en uno el número de peliculas.
+                }
+                // Guardar en la base de datos.
+                db.SaveChanges();
+
+                return Ok(newRental); // Crear recurso con estado 201.
+            }
+
+Implementar frontend
+    - Para tener una respuesta mas rapida y que la página no se quede congelada se usa AJAX para obtener los datos del servidor y renderizar el html desde el cliente.
+    - Un elemento usado para obtener los datos asíncronamente es ajax, ya sea nativo o como biblioteca de jQuery que hace su despliegue mas fácil:
+        $.ajax(url)
+            .done(function(result){
+            // Do something with the result
+        });
+    - El resultado de ajax puede ser de cualquier tipo, xlml, html o json.
+    - Para crear la página es prefente usar ajax y por lo tanto desde el controlador no llamar al modelo sino que toda la información se obtendrá por ajax y el formulario será enviado asincronamente por jquery.
+    - Comandos emmet usados:
+        div.form-group>label+input[type='text'].form-control
+            <div class="form-group">
+                <label></label>
+                <input type="text" value="" class="form-control" />
+            </div>
+        div.form-group>label+input[type='text']
+            <div class="form-group">
+                <label></label>
+                <input type="text" value="" />
+            </div>
+        button.btn.btn-primary
+            <button class="btn btn-primary">Submit</button>
+    - Para comenzar se debe crear el formulario básico (con su controlador MVC) de como quedará la aplicación y agregar su link correspondiente para acceder a él en este caso la barra de navegación.
+        // Controlador
+        public class RentalsController : Controller
+        {
+            // Return the form to the client.
+            public ActionResult New()
+            {
+                return View();
+            }
+        }
+
+        // Vista        
+        @{
+            ViewBag.Title = "New Rental Form";
+        }
+
+        <h2>@ViewBag.Title</h2>
+
+        <form>
+            <div class="form-group">
+                <label>Customer</label>
+                <input type="text" value="" class="form-control" />
+            </div>
+
+            <div class="form-group">
+                <label>Movie</label>
+                <input type="text" value="" class="form-control"/>
+            </div>
+
+            <button class="btn btn-primary"></button>
+        </form>
+
+        // Link de navegación en _NavBar.cshtml
+        <div class="collapse navbar-collapse" id="navbarColor03">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item ">
+                    @Html.ActionLink("New Rental", "New", "Rentals", new { area = "" }, new { @class = "nav-link" })
+                </li>
+                <li class="nav-item ">
+                    @Html.ActionLink("Customers", "Index", "Customers", new { area = "" }, new { @class = "nav-link" })
+                </li>
+                <li class="nav-item">
+                    @Html.ActionLink("Movies", "Index", "Movies", new { area = "" }, new { @class = "nav-link" })
+                </li>
+            </ul>
+        </div>
+    - Para agregar la característica de autocompletado se puede usar la líberia de tipeahead en jquery desarrollada por twitter.
+        - Instalar.
+            install-package Twitter.Typeahead
+        - Agregar al bundle.
+            bundles.Add(new ScriptBundle("~/bundles/lib").Include(
+                        "~/Scripts/jquery-{version}.js",
+                        "~/Scripts/bootstrap.js",
+                        "~/Scripts/bootbox.js",
+                        "~/Scripts/dataTables/jquery.dataTables.js",
+                        "~/Scripts/dataTables/dataTables.bootstrap.js",
+                        "~/Scripts/typeahead.bundle.js"
+                        ));
+        - Agregar estilos para Typeahead:
+            https://twitter.github.io/typeahead.js/examples/
+            https://twitter.github.io/typeahead.js/css/examples.css
+        - De la página de estílos se copian los de typeagead y se ñaden en un nuevo archivo de estilos que se añade a content css.
+            .typeahead {
+            background-color: #fff;
+            }
+
+            .typeahead:focus {
+            border: 2px solid #0097cf;
+            }
+
+            .tt-query {
+            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+                -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+                    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+            }
+
+            .tt-hint {
+            color: #999
+            }
+
+            .tt-menu {
+            width: 422px;
+            margin: 12px 0;
+            padding: 8px 0;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            -webkit-border-radius: 8px;
+                -moz-border-radius: 8px;
+                    border-radius: 8px;
+            -webkit-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+                -moz-box-shadow: 0 5px 10px rgba(0,0,0,.2);
+                    box-shadow: 0 5px 10px rgba(0,0,0,.2);
+            }
+
+            .tt-suggestion {
+            padding: 3px 20px;
+            font-size: 18px;
+            line-height: 24px;
+            }
+
+            .tt-suggestion:hover {
+            cursor: pointer;
+            color: #fff;
+            background-color: #0097cf;
+            }
+
+            .tt-suggestion.tt-cursor {
+            color: #fff;
+            background-color: #0097cf;
+
+            }
+
+            .tt-suggestion p {
+            margin: 0;
+            }
+        - Se agrega el archivo al bundle de css en BundleConfig.cs.
+             bundles.Add(new StyleBundle("~/Content/css").Include(
+                      "~/Content/bootstrap-lumen.css",
+                      "~/Content/bootstrap.css",
+                      "~/Content/typeahead.css",
+                      "~/Content/datatables/css/dataTables.bootstrap.css",
+                      "~/Content/site.css"));
+        - Para consultar el funcionamiento de la libreria tipeahead javascript se debe ver su implementación remota.
+            https://twitter.github.io/typeahead.js/examples/#remote
+
+            // html
+            <div id="remote">
+            <input class="typeahead" type="text" placeholder="Oscar winners for Best Picture">
+            </div>
+
+            // JS
+            var bestPictures = new Bloodhound({
+            datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+            queryTokenizer: Bloodhound.tokenizers.whitespace,
+            prefetch: '../data/films/post_1960.json',
+            remote: {
+                url: '../data/films/queries/%QUERY.json',
+                wildcard: '%QUERY'
+            }
+            });
+
+            $('#remote .typeahead').typeahead(null, {
+            name: 'best-pictures',
+            display: 'value',
+            source: bestPictures
+            });
+        - Configurar typeahead
+            $(document).ready(function () {
+                // Bloodhound encapsula toda la lógica de negocio, llama a la api y pone en cache los resultados.
+                // Crear la consulta del objeto.
+                var customers = new Bloodhound({ 
+                    // Convierte el dato a una pila de tokens, 
+                    datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'), // Ve la propiedad name de customer y usa espacios en blanco para generar los token.
+                    queryTokenizer: Bloodhound.tokenizers.whitespace, // Transforma la query en una pila de tokens.
+                    // Previene de hacer solicitudes adicionales al servidor.
+                    // prefetch: '../data/films/post_1960.json', // Proporcionar datos sobre la optimización
+                    remote: {
+                        url: '../api/customers?query=%QUERY', // %QUERY es lo que se pondrá en el text box. 
+                        wildcard: '%QUERY'
+                    }
+                });
+
+                // Agregar menú desplegable a customer.
+                $('#customer').typeahead(
+                    // Primer argumento para establecer el comportamiento de typeahead.
+                    {
+                        minLength: 3, // Hasta tener 3 elementos typeahead realizará la consulta.
+                        highlight: true // Los carácteres que coincidan con la búsqueda serán resaltados en negritas. 
+                    }, 
+                    {
+                        name: 'customers', // Nombre de la propiedad.
+                        display: 'name', // Propiedad a mostrar de la consulta.
+                        source: customers // Fuente de datos (nombre del objeto Bloohound).
+                    }
+                );
+            });
+        - Agregar un modelo para su posterior lectura en el registro.
+            $(document).ready(function () {
+
+                var viewModel = {}; // Inicializa viewmodel en blanco. 
+
+                // Bloodhound encapsula toda la lógica de negocio, llama a la api y pone en cache los resultados.
+                var customers = new Bloodhound({ 
+                    // Convierte el dato a una pila de tokens, 
+                    datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'), // Ve la propiedad name de customer y usa espacios en blanco para generar los token.
+                    queryTokenizer: Bloodhound.tokenizers.whitespace, // Transforma la query en una pila de tokens.
+                    // Previene de hacer solicitudes adicionales al servidor.
+                    // prefetch: '../data/films/post_1960.json', // Proporcionar datos sobre la optimización
+                    remote: {
+                        url: '../api/customers?query=%QUERY', // %QUERY es lo que se pondrá en el text box. 
+                        wildcard: '%QUERY'
+                    }
+                });
+
+                // Elemento que se va a modificar.
+                $('#customer').typeahead(
+                    // Primer argumento para establecer el comportamiento de typeahead.
+                    {
+                        minLength: 3, // Hasta tener 3 elementos typeahead realizará la consulta.
+                        highlight: true // Los carácteres que coincidan con la búsqueda serán resaltados en negritas. 
+                    }, 
+                    {
+                        name: 'customers', // Nombre de la propiedad.
+                        display: 'name', // Propiedad a mostrar de la consulta.
+                        source: customers // Fuente de datos (nombre del objeto Bloohound).
+                    }
+                ) // Método jquery on.
+                .on("typeahead:select", function (e, customer) { // Evento y customer
+                    viewModel.customerId = customer.id;
+                });
+
+
+                // movie
+                // Bloodhound encapsula toda la lógica de negocio, llama a la api y pone en cache los resultados.
+                var movies = new Bloodhound({
+                    // Convierte el dato a una pila de tokens, 
+                    datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'), // Ve la propiedad name de movie (objeto regreado de la consulta) y usa espacios en blanco para generar los token.
+                    queryTokenizer: Bloodhound.tokenizers.whitespace, // Transforma la query en una pila de tokens.
+                    // Previene de hacer solicitudes adicionales al servidor.
+                    // prefetch: '../data/films/post_1960.json', // Proporcionar datos sobre la optimización
+                    remote: {
+                        url: '../api/movies?query=%QUERY', // %QUERY es lo que se pondrá en el text box. 
+                        wildcard: '%QUERY'
+                    }
+                });
+
+                // Elemento que se va a modificar.
+                $('#movie').typeahead(
+                    // Primer argumento para establecer el comportamiento de typeahead.
+                    {
+                        minLength: 3, // Hasta tener 3 elementos typeahead realizará la consulta.
+                        highlight: true // Los carácteres que coincidan con la búsqueda serán resaltados en negritas. 
+                    },
+                    {
+                        name: 'myMovies', // Nombre de la propiedad.
+                        display: 'name', // Propiedad a mostrar de la consulta.
+                        source: movies // Fuente de datos (nombre del objeto Bloohound).
+                    }
+                ) // Método jquery on.
+                    .on("typeahead:select", function (e, myMovies) { // Evento y mymovies
+                        viewModel.movieId = mymovies.id;
+                    });
+            });
+        - Mejorando los estilos css:
+            <form>
+                <div class="form-group">
+                    <label>Customer</label>
+                    <div class="tt-container">
+                        <input id="customer" type="text" value="" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Movie</label>
+                    <div class="tt-container">
+                        <input id="movie" type="text" value="" class="form-control" />
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 col-sm-6">
+                        <ul id="movies" class="list-group"></ul>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary">Submit</button>
+            </form>
+        - Configuar método para filtrar por query si se pasa el parámetro.
+            public IHttpActionResult GetCustomers(string query = null)
+            {
+                var customersQuery = db.Customers
+                    .Include(c => c.MembershipType);
+
+                if (!String.IsNullOrWhiteSpace(query)) // Filtrado de customers por nombre.
+                {
+                    customersQuery = customersQuery.Where(c => c.Name.Contains(query));
+                }
+
+                var customersDto = customersQuery.ToList()
+                    .Select(Mapper.Map<Customer, CustomerDto>); // Pasa como delegado el método Map que recibe un objeto de tipo Customer como parámetro.
+                return Ok(customersDto);
+            }
+        - Filtrado de películas
+            public IHttpActionResult GetMovies(string query = null)
+            {
+                var moviesQuery = db.Movies.Include(m => m.Genre)
+                    .Where(m => m.NumberAvailable>0);
+
+                if (!String.IsNullOrWhiteSpace(query)) // Filtrado de movies por nombre.
+                {
+                    moviesQuery = moviesQuery.Where(m => m.Name.Contains(query));
+                }
+
+                var moviesDto = moviesQuery.ToList().Select(Mapper.Map<Movie, MovieDto>);
+                return Ok(moviesDto);
+            }
+        - Enviar formulario por ajax.
+            
+            <form id="newRental"> ... </form>
+            
+            $("#newRental").submit(function (e) {
+                e.preventDefault(); // Evita que el formulario se envíe por defecto.
+
+                $.ajax({
+                    url: "/api/newRentals",
+                    method: "post",
+                    data: viewModel
+                })
+                    .done(function () {
+                        console.log("done");
+                    })
+                    .fail(function () {
+                        console.log("error");
+                    });
+            })
+        - Añadir notificación que el dato fue registrado.
+            - Instalar:
+                install-package toastr
+            - En bundle config añadir js y css
+                "~/Scripts/toastr.js"
+                "~/Content/toastr.css"
+            - En la función done de ajax modificar el mensaje.
+                $("#newRental").submit(function (e) {
+                    e.preventDefault(); // Evita que el formulario se envíe por defecto.
+
+                    $.ajax({
+                        url: "/api/newRentals",
+                        method: "post",
+                        data: viewModel
+                    })
+                        .done(function () {
+                            toastr.success("Rentals successfully recorded.");
+                        })
+                        .fail(function () {
+                            toastr.error("Something unexpected happened.");
+                        });
+                });
+        - Implementar validación del lado del cliente.
+            - Agregar jqueryval
+                @section scripts
+                {
+                    @Scripts.Render("~/bundles/jqueryval")
+                }
+            - Para tener un campo con validación del lado clente se agrega el atributo required para que sea reconocido como un campo requerido.
+                <input id="customer" required type="text" value="" class="form-control" />
+            - Validar con el método validate() de jquery y solo enviar el formulario si es válido.
+                $("#newRental").validate({
+                    submitHandler: function () { // Función a ejecutar si pasó la validación.
+                        e.preventDefault(); // Evita que el formulario se envíe por defecto.
+
+                        $.ajax({
+                            url: "/api/newRentals",
+                            method: "post",
+                            data: viewModel
+                        })
+                            .done(function () {
+                                toastr.success("Rentals successfully recorded.");
+                            })
+                            .fail(function () {
+                                toastr.error("Something unexpected happened.");
+                            });
+                    }
+                });
+            - Dar estilos a las clases de error generadas al validar.
+                - Al tener un error jquery asigna la clase "error" al elemento que no pasó la validación.
+                    <input id="customer" required="" type="text" value="" class="form-control tt-input error" autocomplete="off" spellcheck="false" dir="auto" style="position: relative; vertical-align: top; background-color: transparent;" aria-invalid="true">
+                    <label id="customer-error" class="error" for="customer">This field is required.</label>
+                - Se asignan los estilos de error en el css para que aparezcan remarcados.
+                    .field-validation-error,
+                    label.error {
+                        color: red;
+                    }
+                    .input-validation-error,
+                    input.error {
+                        border: 4px solid red;
+                    }
+            - Validaciones personalizadas:
+                - Asignar la etiqueta que tendrá la validación.
+                    <input id="customer" name="customer" data-rule-validCustomer="true" required type="text" value="" class="form-control" />
+                    <input id="movie" name="myMovie" data-rule-atLeastOneMovie="true" type="text" value="" class="form-control" />
+                - Código de la validación.
+                    $.validator.addMethod("validCustomer", // Nombre de la validación.
+                        function () { // Función para validar.
+                        return viewModel.customerId && viewModel.customerId !== 0;
+                    },
+                        "Please select a valid customer." // Mensaje de error.
+                    );
+
+                    $.validator.addMethod("atLeastOneMovie", // Nombre de la validación.
+                        function () { // Función para validar.
+                            return viewModel.movieIds.length > 0; // Condición de validación.
+                        },
+                        "Please select at least one movie." // Mensaje de error.
+                    );
+            - Limpiar la vista y las variables una vez enviado el formulario.
+                var validator = $("#newRental").validate({
+                    submitHandler: function () { // Función a ejecutar si pasó la validación. 
+
+                        $.ajax({
+                            url: "/api/newRentals",
+                            method: "post",
+                            data: viewModel
+                        })
+                            .done(function () {
+                                toastr.success("Rentals successfully recorded.");
+                                // Limpiar cajas de texto y lista de películas.
+                                $("#customer").typeahead("val", "");
+                                $("#movie").typeahead("val", "");
+                                $("#movies").empty();
+
+                                // Limpiar variable donde se almacena el modelo.
+                                viewModel = { movieIds: [] };
+
+                                validator.resetForm(); // Resetear el formulario en términos de su validación.
+                            })
+                            .fail(function () {
+                                toastr.error("Something unexpected happened.");
+                            });
+
+                    return false // Evita que el formulario se envíe por defecto.
+                    }
+                });
+
+Construcción de una nueva característica sistemáticamente.
+    - Entender el problema, sin distracciones.
+    - Comenzar desde el backend.
+    - Pensar en las entradas y salidas de la nueva característica.
+    - Declarar una API sencilla.
+    - Extender el modelo si es necesario.
+    - Hacer la implementación de la API conforme al happy path.
+    - Añadir detalles uno por uno paara validar.
+    - Desarrollar en el frontend seguiendo los mismos consejos.
+

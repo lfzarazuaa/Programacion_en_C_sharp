@@ -31,6 +31,8 @@ namespace Vidly.Dtos
         [Display(Name = "Number in Stock")]
         public int NumberInStock { get; set; }
 
+        public int NumberAvailable { get; set; }
+
         public override string ToString()
         {
             return "{ id:int, name:string, genreId:int, releaseDate:Datetime,  numberInStock:int }";

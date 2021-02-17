@@ -2625,3 +2625,161 @@ Construcción de una nueva característica sistemáticamente.
     - Añadir detalles uno por uno paara validar.
     - Desarrollar en el frontend seguiendo los mismos consejos.
 
+Instalar IIS
+    Ir a panel de control.
+    Buscar agregar o quitar programas.
+    Se da clic en arctivar o desactivar caracteristicas.
+    Se activa IIS y se activan las configuraciones necesarias.
+
+Publicando la aplicación
+    Ir al proyecto en la opción publish(publicar).
+    En la ventana se puede elegir entre publicar o integración continua.
+        - Publicar.
+            - Azure Websites: Elegir un sitio web creado en azure o crear uno nuevo, se necesita la cuenta de Azure.
+            - Import: Cuando ya se tiene un perfil creado y se quiere usar ese perfil para republicar el sitio.
+            - Servidor Web (IIS): Publica localmente usando IIS.
+                - Web Deploy: Publica usando IIS, para eso el servidor debe estar configurado para soportar IIS.
+                - Web Deploy Package: Genera solo la configuración de IIS sin guardarlo en IIS local.
+            - Carpeta: Publica los archivos en una carpeta para posteriormente ser leído por un servidor como IIS.
+        - Integración continua.
+
+Publicando la base de datos
+    - Solo es necesario si no se usa web deploy y esto es debido a que no pueden ejecutar las migraciones por default.
+    - Para ejecutar las migraciones en un archivo se usa:
+        update-database -script // Ejecuta las migraciones pendientes.
+        update-database -script -SourceMigration:SeedUsers// Ejecuta desde la migración definida.
+    - Con las migraciones se garantiza tener el esquema y los datos por defecto configurados, ahorrando tiempo asi en la publicación de un sitio.
+    - Una vez generado el archivo para crear la base de datos lo podemos ejecutar y asi poder realizar la cadena de conexión.
+
+Configuraciones de Construcción (Build configurations)
+    Son configuraciones ya sean para produccion, debug o testing, estas configuraciones por lo general tienen diferentes cadenas de conexión para base de datos, diferentes niveles de optimización de código, agregan o quitan configuraciones para detección de errores ,etc.
+    - Para añadir una nueva configuración se debe seguir los siguientes pasos:
+        - En debug ir a administrar nueva configuración.
+        - Seleccionar nueva en la opción para seleccionar una nueva configuración.
+        - Crear la configuración tomando como referencia la configuración deseada, para testing es recomendable usar release.
+        - En Web.Config dar clic derecho y seleccionar la opción agregar transformación de configuración.
+        - Editar las configuraciones deseadas en Web.nombreConfiguracion.config.
+    - En Web.Testing.config (Nueva configuración generada), se agregan todas las opciones pertinentes a la configuración como usar bundles, debug, configurar las credenciales necesarias para la aplicación.
+    - Las configuraciones colocadas en la configuración van a sobrescribir las que se tiene en Web.config.
+    - Sobre esa configuración también se puede crear un perfil y seleccionar la configuración testing para generar los archivos para IIS.
+    - Los perfiles creados aparecerán en el proyecto en Propierties/PublishProfiles.
+
+Configuraciones de Aplicacción
+    - Las configurariones de aplicación son referencias que tenemos para sucribirnos a diversos servicios, como un servidor de email, la base datos, credenciales para apliaciones de terceros como un login y que conforme estemos en producción desarrollo o testing cambiaran sus ubicaciones.
+    - Como buena practica los datos confidenciales no deben estar puestos directamente en el código, si que se guardan en un archivo de configuración.
+    - En Web.config las podemos encontrar como appSettings.
+        <appSettings>
+            <add key="webpages:Version" value="3.0.0.0" />
+            <add key="webpages:Enabled" value="false" />
+            <add key="ClientValidationEnabled" value="true" />
+            <add key="UnobtrusiveJavaScriptEnabled" value="true" />
+        </appSettings>
+    - Se pueden añadir nuevas configuraciones con una nueva llave y su respectivo valor.
+        <add key="FacebookAppId" value="374991787270999" />
+	    <add key="FacebookAppSecret" value="numerosecreto" />
+    - Para acceder a las propiedades se accede mediante la clase ConfigurationManager.
+        app.UseFacebookAuthentication(
+               appId: ConfigurationManager.AppSettings["FacebookAppId"],
+               appSecret: ConfigurationManager.AppSettings["FacebookAppSecret"]);
+    - Para cambiar una configuración de su versión original (Web Config) a una personalizada se debe declarar en las 2 configuraciones, se debe verificar que esten dentro de <appSettings>.
+        - En Web.config
+	        - <add key="MailServer" value="develop-smtp.vidly.com" />
+        - En WebTesting.config se configura (dentro de <appSettings>):
+            - <add key="MailServer" value="testing-smtp.vidly.com" 
+			 xdt:Transform="SetAttributes" xdt:Locator="Match(key)"/>
+            - Match(key) hace referencia a buscar por nombre de propiedad y SetAttributes indica que sustituirá por los demas valores indicados en los atributos.
+    - Para ver el preview de como quedará la transformación se usa
+        - Si  no se ha publicado, Clic derecho en WebT.Testing.config y luego publicar.
+        - Click derecho en en WebT.Testing.config y luego obtener vista previa y transformar (todas las propiedades deben estar bien).
+    
+Separar appSettings para dar mayor seguridad
+    - Añadir un archivo de configuración con el archivo requerido, en este caso appSettings.config
+    - Llamar el archivo de configuración.
+        <appSettings configSource="AppSettings.config"></appSettings>
+    - En el servidor público solo subir un ejemplor de archivo appSettings sin las contraseñas reales establecidas.
+
+Encriptar archivos
+    Para otorgar mayor seguridad y no dejar expuestas las claves se pueden encriptar los archivos y cuando sea necesario desencriptarlos, para ello .net ofrece una solución.
+    - La encriptación toma nuestro usuario de windows para encriptar y desencriptar los archivos.
+    - Ejecutar la consola de visual studio Developer Command Prompt for VS.
+        - Encriptar archivo appSettings.
+            aspnet_regiis -pef "appSettings" "C:\Sitos_IIS\Vidly\Testing" -prov "DataProtectionConfigurationProvider"
+        - Desencriptar archivo appSettings.
+            aspnet_regiis -pdf "appSettings" "C:\Sitos_IIS\Vidly\Testing"
+
+Páginas de error personalizadas (Custom error pages)
+    - Son las páginas que nos aparecen cuando generamos una exepción o no tenemos la ruta configurada.
+    - Si dejamos nuestra página sin configurar una página de error, por defecto .NET nos mostrará la exepción en pantalla con todo el seguimiento y versiones del framework lo cual puede terminar en un ataque al sitio.
+    - Para agregar una página de error personalizada se agrega en Web.config dentro de la etiqueta <system.web>.
+        <system.web>
+	        <customErrors mode="On"></customErrors>
+            ...
+        </system.web>
+        - Para configurar solo a usuarios que acceden remotamente.
+        <customErrors mode="RemoteOnly"></customErrors>
+    - La vista que se llama al ejecutar la página de error es:
+        Shared/Error.cshtml.
+    - El controlador que llama a la vista de error el cual se encarga de atrapar todos los errores esta en AppStartFilterConfig:
+        public class FilterConfig
+        {
+            public static void RegisterGlobalFilters(GlobalFilterCollection filters)
+            {
+                filters.Add(new HandleErrorAttribute()); // Filtro para llamado de error.
+                filters.Add(new AuthorizeAttribute());
+                filters.Add(new RequireHttpsAttribute());
+            }
+        }
+    - Otro tipo de error posible es cuando no se encuentra el recurso el cual genera un error 404.
+        - Para este caso IIS es quien generá la vista default del error.
+        - Para cambiar la vista de la página se configura a una redirección para cada código de error desplegado.
+            <customErrors mode="On">
+                <error  statusCode="404" redirect="~/404.html"/>
+            </customErrors>
+    - Para cuando se pide un recurso estatico que no concuerda con una ruta de controlador no nos redirecciona pues no está siendo atendida por asp.net.
+        - Ejemplo de ruta.
+            https://localhost:44335/image.gif
+        - Configurar dentro de <system.webServer> y con modo File ya que sino cambia el estado de la respuesta a 200.
+            <httpErrors errorMode="Custom">
+                <remove  statusCode="404"/>
+                <error statusCode="404" path="~/404.html" responseMode="File"/>
+            </httpErrors>
+
+Revisar Exepciones no controladas.
+    - Para revisar las exepciones no controladas se puede usar una extensión llamada elmah (error logging models and handlers).
+    - Instalar Elmah
+        install-package Elmah
+    - Cuando se ejecuta una exepción.
+        - Ir a ~/elmah.axd
+        - Seleccionar detalles.
+    - Al seleccionar detalles se puede ver todo el seguimiento de la expecion así como los valores de las variables al momento de generarse.
+    - Elmah solo se puede ejecutar localmente por motivos de seguridad.
+    - Para acceder remotamente a Elmah se de debe configurar:
+        - En Web.config encontar elmah.axd.
+        - Dentro de system.web mas cercano se encuentra el httphandler el cual toma la petición y genera una respuesta, es de las formas de mas bajo nivelL de procesar una solicitud.
+            <httpHandlers>
+                <add verb="POST,GET,HEAD" path="elmah.axd" type="Elmah.ErrorLogPageFactory, Elmah" />
+            </httpHandlers>
+        - En la etiqueta system.web agregar la autorización, está puede ser para rol o para usuario de asp.net.
+            <authorization>
+                <allow roles="admin" />
+                <deny users="*" />
+            </authorization>
+
+            <authorization>
+                <allow users="admin@vidly.com" />
+                <deny users="*" />
+            </authorization>
+        - Documentación autorizacion http://code.google.com/p/elmah/wiki/SecuringErrorLogPages.
+        - Elmah también permite enviar correos si se ha detectado alguna excepción esto puede ser útil en producción para saber que ha ocurrido.
+
+Modificar estilos para mejorar la aplicación.
+    Algunas técnicas para mejorar la visualización de la aplicación son:
+        - Para cambiar el color de un elemento de la barra de navegación.
+            - Inspeccionar el elemento.
+            - Intentar encontrar el background-color dentro de las propiedades.
+            - Si no se encuentra buscar en el elemento padre, asi hasta encontrarlo.
+            - No cambiar los colores heredados.
+            - Poner un color al azar y con la paleta ir buscando el que mas nos convenga.
+            - En un nuevo archivo css sobrescribir los estilos predefinidos de bootstrap para todas las partes de la aplicación que querramos.
+        - Para elegir los colores de nuestra aplicación nos podemos guiar con las diversas paletas de colores de color.adobe.com, con esto solo elegimos los colores y le asignamos el tema a nuestra página. 
+            https://color.adobe.com/es/create/color-wheel
